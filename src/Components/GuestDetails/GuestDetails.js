@@ -16,7 +16,8 @@ function GuestDetails({ isVisible, guestData, fetchReservationData }) {
     const [issueDate, setIssueDate] = useState('');
     const [expiryDate, setExpiryDate] = useState('');
     const [placeOfIssue, setPlaceOfIssue] = useState('');
-    const [documentImage, setDocumentImage] = useState(null);
+    const [documentImage, setDocumentImage] = useState(null); // State to hold document image
+    const [faceImage, setFaceImage] = useState(null); // State to hold face image
 
     useEffect(() => {
         if (guestData) {
@@ -27,11 +28,12 @@ function GuestDetails({ isVisible, guestData, fetchReservationData }) {
             setGivenName(guestData.GivenName || '');
             setMiddleName(guestData.MiddleName || '');
             setGender(guestData.Gender || '');
-            setFamilyName(guestData.LastName || '');
+            setFamilyName(guestData.LastName || ''); // Assuming LastName is the family name
             setIssueDate(guestData.IssueDate || '');
             setExpiryDate(guestData.ExpiryDate || '');
             setPlaceOfIssue(guestData.IssuingPlace || '');
             setDocumentImage(guestData.DocumentImageBase64 || null);
+            setFaceImage(guestData.FaceImageBase64 || null);
         }
     }, [guestData]);
 
@@ -50,16 +52,16 @@ function GuestDetails({ isVisible, guestData, fetchReservationData }) {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcscannerapi.saavy-pay.com:8082/api/IDScan/ScanDocument';
             const response = await fetch(corsProxyUrl + apiUrl, {
-                method: 'GET', 
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                 
                 }
             });
-    
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+
             const data = await response.json();
             if (data.Result) {
                 const scannedData = data.ScannedDocument;
@@ -75,6 +77,7 @@ function GuestDetails({ isVisible, guestData, fetchReservationData }) {
                 setExpiryDate(scannedData.ExpiryDate ? scannedData.ExpiryDate.split('T')[0] : '');
                 setPlaceOfIssue(scannedData.IssuingPlace || '');
                 setDocumentImage(scannedData.DocumentImageBase64 || null);
+                setFaceImage(scannedData.FaceImageBase64 || null);
             } else {
                 console.error("Scanning failed:", data.ErrorMessage);
             }
@@ -82,7 +85,6 @@ function GuestDetails({ isVisible, guestData, fetchReservationData }) {
             console.error("Failed to scan document:", error);
         }
     };
-    
 
     return (
         <div className="guest-details-container">
@@ -96,7 +98,11 @@ function GuestDetails({ isVisible, guestData, fetchReservationData }) {
                     </>
                 )}
                 <div className='user-pic'>
-                    <img src={UserPic} alt="Profile" />
+                    {faceImage ? (
+                        <img src={`data:image/png;base64, ${faceImage}`} alt="Face Image" className='face-img'/>
+                    ) : (
+                        <img src={UserPic} alt="Profile" />
+                    )}
                 </div>
             </div>
             <div className="guest-form">

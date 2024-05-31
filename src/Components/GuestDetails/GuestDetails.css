@@ -42,7 +42,9 @@
     display: block;
     margin-bottom: 0.5rem;
 }
-
+.scanned-document-img{
+    height: 250px;
+}
 .guest-form input,
 .guest-form select {
     width: 100%;
@@ -55,13 +57,22 @@
     gap: 1.3rem;
 }
 
-.user-pic {
+.scanned-document-img {
     background-color: #464646;
     width: 388px;
     height: 190px;
     border-radius: 1rem;
-    padding: 2rem 8rem;
 
+}
+.user-pic{
+    background-color: #464646;
+    width: 388px;
+    height: 190px;
+    border-radius: 1rem;
+    padding: 1rem 8rem;
+}
+.face-img{
+    width: 8rem;
 }
 
 .passport-pic {
