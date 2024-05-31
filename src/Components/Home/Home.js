@@ -1,24 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import logo from '../../Images/logo.png';
 import ID_GO from '../../Images/ID-GO.png';
 import './Home.css';
 import GuestDetails from '../GuestDetails/GuestDetails';
 
+const fetchReservationData = async (reservationId) => {
+    try {
+        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                hotelDomain: "EU",
+                kioskID: "KIOSK",
+                username: "SUPERVISOR",
+                password: "PEGASUS2021",
+                systemType: "KIOSK",
+                language: "EN",
+                legNumber: null,
+                chainCode: "CHA",
+                destinationEntityID: "TI",
+                destinationSystemType: "PMS",
+                FetchBookingRequest: {
+                    ReservationNameID: reservationId
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Fetched reservation data:", data);
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch reservation data:", error);
+        return null;
+    }
+};
+
 function Home() {
+    const { reservationId } = useParams();
+    const [reservationData, setReservationData] = useState(null);
     const [guests, setGuests] = useState(['Primary Guest']);
     const [visibleGuestIndex, setVisibleGuestIndex] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isButtonClicked, setIsButtonClicked] = useState(false);
 
+    useEffect(() => {
+        if (reservationId) {
+            fetchReservationData(reservationId).then(data => {
+                if (data) {
+                    setReservationData(data.responseData[0]);
+                    const guestProfiles = data.responseData[0].GuestProfiles || [];
+                    setGuests(guestProfiles.map(profile => profile.GuestName) || ['Primary Guest']);
+                }
+            });
+        }
+    }, [reservationId]);
 
     const addGuest = () => {
         setGuests([...guests, `Accompany ${guests.length}`]);
+        setIsButtonClicked(true);
     };
 
     const toggleGuestDetails = (index) => {
         setVisibleGuestIndex(visibleGuestIndex === index ? null : index);
         setIsExpanded(visibleGuestIndex === index ? false : true);
     };
+
+    if (!reservationData) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div className="container">
@@ -36,27 +92,27 @@ function Home() {
                     <div className='reservation-data'>
                         <div className="info">
                             <div>RESERVATION NUMBER</div>
-                            <div>1234</div>
+                            <div>{reservationData.ReservationNumber}</div>
                         </div>
                         <div className="info">
                             <div>ROOM NUMBER</div>
-                            <div>21</div>
+                            <div>{reservationData.RoomDetails.RoomNumber}</div>
                         </div>
                         <div className="info">
                             <div>GUEST NAME</div>
-                            <div>John Doe</div>
+                            <div>{reservationData.GuestProfiles[0]?.GuestName}</div>
                         </div>
                         <div className="info">
                             <div>ARRIVAL DATE</div>
-                            <div>12/12/2023</div>
+                            <div>{reservationData.ArrivalDate}</div>
                         </div>
                         <div className="info">
                             <div>DEPARTURE DATE</div>
-                            <div>13/12/2023</div>
+                            <div>{reservationData.DepartureDate}</div>
                         </div>
                         <div className="info">
                             <div>ADULT COUNT</div>
-                            <div>1</div>
+                            <div>{reservationData.Adults}</div>
                         </div>
                     </div>
                     <div className="guest-details">
@@ -64,8 +120,8 @@ function Home() {
                             <h4>Guest Details</h4>
                             <button type="button"
                                 className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`}
-                              onClick={addGuest}>
-                                Add Guest 
+                                onClick={addGuest}>
+                                Add Guest
                                 <i className="bi bi-plus-lg"></i>
                             </button>
                         </div>
@@ -74,7 +130,12 @@ function Home() {
                                 <button className="accordion" onClick={() => toggleGuestDetails(index)}>
                                     {guest}
                                 </button>
-                                {visibleGuestIndex === index && <GuestDetails isVisible={true} />}
+                                {visibleGuestIndex === index && (
+                                    <GuestDetails
+                                        isVisible={true}
+                                        guestData={reservationData.GuestProfiles[index]}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>
