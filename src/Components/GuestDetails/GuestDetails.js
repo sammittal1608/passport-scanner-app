@@ -25,7 +25,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
-    const [reservationNumberState, setReservationNumber] = useState(''); // Define state for reservation number
+    const [reservationNumberState, setReservationNumber] = useState(''); 
 
     useEffect(() => {
         if (guestData) {
@@ -59,7 +59,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             "RequestObject": [
                 {
                     "ConfirmationNumber": guestData?.ConfirmationNumber ?? '',
-                    "ReservationNumber": reservationNumber,
+                    "ReservationNumber": reservationNumberState,
                     "ReservationNameID": guestData?.ReservationNameID,
                     "ArrivalDate": guestData?.arrivalDate,
                     "DepartureDate": guestData?.departureDate,
@@ -166,7 +166,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             "destinationEntityID": settings.destinationId,
             "destinationSystemType": settings.destinationSystemType,
             "CreateAccompanyingProfileRequest": {
-                "ReservationNumber": reservationNumber,
+                "ReservationNumber": reservationNumberState,
                 "Gender": gender,
                 "FirstName": givenName,
                 "MiddleName": middleName,
@@ -176,6 +176,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
 
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+            const corsProxyUrl2 = 'https://cors-anywhere.herokuapp.com/';
             const apiUrl1 = 'http://qcapi.saavy-pay.com:8082/api/local/PushReservationDetails';
             const apiUrl2 = 'http://qcapi.saavy-pay.com:8082/api/ows/CreateAccompanyingGuset';
 
@@ -192,7 +193,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
 
             if (!pmsProfileId) {
                 
-                response = await axios.post(corsProxyUrl + apiUrl2, requestBody2, {
+                response = await axios.post(corsProxyUrl2 + apiUrl2, requestBody2, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
