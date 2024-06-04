@@ -6,6 +6,8 @@ const settings = {
     chainCode: 'CHA',
     destinationId: 'TI',
     destinationSystemType: 'PMS',
+    username: "SUPERVISOR",
+    password: "PEGASUS2021",
 };
 
 export default settings;

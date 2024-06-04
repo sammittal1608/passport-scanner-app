@@ -4,6 +4,7 @@ import logo from '../../Images/logo.png';
 import ID_GO from '../../Images/ID-GO.png';
 import './Home.css';
 import GuestDetails from '../GuestDetails/GuestDetails';
+import settings from '../../app.settings';
 
 const fetchReservationData = async (reservationId) => {
     try {
@@ -56,7 +57,7 @@ function Home() {
                 if (data) {
                     setReservationData(data.responseData[0]);
                     const guestProfiles = data.responseData[0].GuestProfiles || [];
-                    setGuests(guestProfiles.map(profile => profile.GuestName) || ['Primary Guest']);
+                    setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
                 }
             });
         }
@@ -134,7 +135,7 @@ function Home() {
                                     <GuestDetails
                                         isVisible={true}
                                         guestData={reservationData.GuestProfiles[index]}
-                                    />
+                                        reservationNumber={reservationData.ReservationNumber}                                    />
                                 )}
                             </div>
                         ))}
