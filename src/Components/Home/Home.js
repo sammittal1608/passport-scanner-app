@@ -14,16 +14,16 @@ const fetchReservationData = async (reservationId) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                hotelDomain: "EU",
-                kioskID: "KIOSK",
-                username: "SUPERVISOR",
-                password: "PEGASUS2021",
-                systemType: "KIOSK",
-                language: "EN",
-                legNumber: null,
-                chainCode: "CHA",
-                destinationEntityID: "TI",
-                destinationSystemType: "PMS",
+                hotelDomain: settings.hotelDomain,
+                kioskID: settings.kioskId,
+                username: settings.username,
+                password: settings.password,
+                systemType: settings.systemType,
+                language: settings.language,
+                legNumber: settings.legNumber,
+                chainCode: settings.chainCode,
+                destinationEntityID: settings.destinationEntityID,
+                destinationSystemType: settings.destinationSystemType,
                 FetchBookingRequest: {
                     ReservationNameID: reservationId
                 }
@@ -135,7 +135,8 @@ function Home() {
                                     <GuestDetails
                                         isVisible={true}
                                         guestData={reservationData.GuestProfiles[index]}
-                                        reservationNumber={reservationData.ReservationNumber}                                    />
+                                        reservationNumber={reservationData.ReservationNumber}
+                                    />
                                 )}
                             </div>
                         ))}

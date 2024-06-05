@@ -1,13 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import './GuestDetails.css';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import settings from '../../app.settings.js';
-// import PassportFront from '../../Images/passport-front.png';
-// import PassportBack from '../../Images/passport-back.png';
-// import UserPic from '../../Images/UserPic.png';
+
+export const fetchReservationData = async (reservationId) => {
+    try {
+        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                hotelDomain: settings.hotelDomain,
+                kioskID: settings.kioskId,
+                username: settings.username,
+                password: settings.password,
+                systemType: settings.systemType,
+                language: settings.language,
+                legNumber: settings.legNumber,
+                chainCode: settings.chainCode,
+                destinationEntityID: settings.destinationEntityID,
+                destinationSystemType: settings.destinationSystemType,
+                FetchBookingRequest: {
+                    ReservationNameID: reservationId
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Fetched reservation data:", data);
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch reservation data:", error);
+        return null;
+    }
+};
 
 
 function GuestDetails({ isVisible, guestData, reservationNumber }) {
+    const { reservationId } = useParams();
+
     const [documentType, setDocumentType] = useState('');
     const [nationality, setNationality] = useState('');
     const [documentNumber, setDocumentNumber] = useState('');
@@ -25,10 +62,19 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
-    const [reservationNumberState, setReservationNumber] = useState(''); 
+    const [reservationNumberState, setReservationNumber] = useState('');
+    const [reservationData, setReservationData] = useState('');
+
 
     useEffect(() => {
+        if (reservationId) {
+            fetchReservationData(reservationId).then(data => {
+                setReservationData(data.responseData[0]);
+            });
+        }
+
         if (guestData) {
+
             setPmsProfileId(guestData.PmsProfileID || '');
             setDocumentType(guestData.DocumentType || '');
             setNationality(guestData.Nationality || '');
@@ -54,63 +100,71 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
 
     if (!isVisible) return null;
 
+    const getGuestDetails = (pmsProfileID) => {
+        const guestProfiles = reservationData.GuestProfiles;
+        const guestDetails = guestProfiles.find(profile => profile.PmsProfileID === pmsProfileID);
+        return guestDetails;
+    };
+
     const handleSave = async () => {
+        var guestDetails = await getGuestDetails(pmsProfileId);
+
         const requestBody1 = {
             "RequestObject": [
                 {
-                    "ConfirmationNumber": guestData?.ConfirmationNumber ?? '',
+                    "ConfirmationNumber": reservationData?.ConfirmationNumber ?? '',
                     "ReservationNumber": reservationNumberState,
-                    "ReservationNameID": guestData?.ReservationNameID,
-                    "ArrivalDate": guestData?.arrivalDate,
-                    "DepartureDate": guestData?.departureDate,
-                    "CreatedDateTime": guestData?.CreatedDateTime,
-                    "Adults": guestData?.adultCount,
-                    "Child": guestData?.Child,
-                    "ReservationStatus": guestData?.ReservationStatus,
-                    "ComputedReservationStatus": guestData?.ComputedReservationStatus,
-                    "LegNumber": guestData?.LegNumber,
-                    "ChainCode": guestData?.ChainCode,
-                    "ExpectedDepartureTime": guestData?.ExpectedDepartureTime,
-                    "ExpectedArrivalTime": guestData?.ExpectedArrivalTime,
-                    "ReservationSourceCode": guestData?.ReservationSourceCode,
-                    "ReservationType": guestData?.ReservationType,
-                    "PrintRate": guestData?.PrintRate,
-                    "NoPost": guestData?.NoPost,
-                    "DoNotMoveRoom": guestData?.DoNotMoveRoom,
-                    "TotalAmount": guestData?.TotalAmount,
-                    "TotalTax": guestData?.TotalTax,
-                    "IsTaxInclusive": guestData?.IsTaxInclusive,
-                    "CurrentBalance": guestData?.CurrentBalance,
+                    "ReservationNameID": reservationData?.ReservationNameID,
+                    "ArrivalDate": reservationData?.ArrivalDate,
+                    "DepartureDate": reservationData?.DepartureDate,
+                    "CreatedDateTime": reservationData?.CreatedDateTime,
+                    "Adults": reservationData?.Adult,
+                    "Child": reservationData?.Child,
+                    "ReservationStatus": reservationData?.ReservationStatus,
+                    "ComputedReservationStatus": reservationData?.ComputedReservationStatus,
+                    "LegNumber": reservationData?.LegNumber,
+                    "ChainCode": reservationData?.ChainCode,
+                    "ExpectedDepartureTime": reservationData?.ExpectedDepartureTime,
+                    "ExpectedArrivalTime": reservationData?.ExpectedArrivalTime,
+                    "ReservationSourceCode": reservationData?.ReservationSourceCode,
+                    "ReservationType": reservationData?.ReservationType,
+                    "PrintRate": reservationData?.PrintRate,
+                    "NoPost": reservationData?.NoPost,
+                    "DoNotMoveRoom": reservationData?.DoNotMoveRoom,
+                    "TotalAmount": reservationData?.TotalAmount,
+                    "TotalTax": reservationData?.TotalTax,
+                    "IsTaxInclusive": reservationData?.IsTaxInclusive,
+                    "CurrentBalance": reservationData?.CurrentBalance,
                     "RoomDetails": {
-                        "RoomNumber": guestData?.RoomDetails.RoomNumber,
-                        "RoomType": guestData?.RoomDetails.RoomType,
-                        "RoomTypeDescription": guestData?.RoomDetails.RoomTypeDescription,
-                        "RoomTypeShortDescription": guestData?.RoomDetails.RoomTypeShortDescription,
-                        "RoomStatus": guestData?.RoomDetails.RoomStatus,
-                        "RTC": guestData?.RoomDetails.RTC,
-                        "RTCDescription": guestData?.RoomDetails.RTCDescription,
-                        "RTCShortDescription": guestData?.RoomDetails.RTCShortDescription
+                        "RoomNumber": reservationData?.RoomDetails?.RoomNumber,
+                        "RoomType": reservationData?.RoomDetails?.RoomType,
+                        "RoomTypeDescription": reservationData?.RoomDetails?.RoomTypeDescription,
+                        "RoomTypeShortDescription": reservationData?.RoomDetails?.RoomTypeShortDescription,
+                        "RoomStatus": reservationData?.RoomDetails?.RoomStatus,
+                        "RTC": reservationData?.RoomDetails?.RTC,
+                        "RTCDescription": reservationData?.RoomDetails?.RTCDescription,
+                        "RTCShortDescription": reservationData?.RoomDetails?.RTCShortDescription
                     },
                     "RateDetails": {
-                        "RateCode": guestData?.RateDetails.RateCode,
-                        "RateAmount": guestData?.RateDetails.RateAmount,
-                        "DailyRates": guestData?.RateDetails.DailyRates,
-                        "IsMultipleRate": guestData?.RateDetails.IsMultipleRate
+                        "RateCode": reservationData?.RateDetails?.RateCode,
+                        "RateAmount": reservationData?.RateDetails?.RateAmount,
+                        "DailyRates": reservationData?.RateDetails?.DailyRates,
+                        "IsMultipleRate": reservationData?.RateDetails?.IsMultipleRate
                     },
-                    "PartyCode": guestData?.PartyCode,
-                    "PaymentMethod": guestData?.PaymentMethod,
-                    "IsPrimary": guestData?.IsPrimary,
-                    "ETA": guestData?.ETA,
-                    "FlightNo": guestData?.FlightNo,
-                    "IsCardDetailPresent": guestData?.IsCardDetailPresent,
-                    "IsDepositAvailable": guestData?.IsDepositAvailable,
-                    "IsPreCheckedInPMS": guestData?.IsPreCheckedInPMS,
-                    "IsSaavyPaid": guestData?.IsSaavyPaid,
-                    "SharerReservations": guestData?.SharerReservations,
-                    "DepositDetail": guestData?.DepositDetail,
-                    "PreferanceDetails": guestData?.PreferanceDetails,
-                    "PackageDetails": guestData?.PackageDetails,
-                    "userDefinedFields": guestData?.userDefinedFields,
+                    "PartyCode": reservationData?.PartyCode,
+                    "PaymentMethod": reservationData?.PaymentMethod,
+                    "IsPrimary": reservationData?.IsPrimary,
+                    "ETA": reservationData?.ETA,
+                    "FlightNo": reservationData?.FlightNo,
+                    "IsCardDetailPresent": reservationData?.IsCardDetailPresent,
+                    "IsDepositAvailable": reservationData?.IsDepositAvailable,
+                    "IsPreCheckedInPMS": reservationData?.IsPreCheckedInPMS,
+                    "IsSaavyPaid": reservationData?.IsSaavyPaid,
+                    "SharerReservations": reservationData?.SharerReservations,
+                    "DepositDetail": reservationData?.DepositDetail,
+                    "PreferanceDetails": reservationData?.PreferanceDetails,
+                    "PackageDetails": reservationData?.PackageDetails,
+                    "userDefinedFields": reservationData?.userDefinedFields,
                     "GuestProfiles": [
                         {
                             "PmsProfileID": pmsProfileId,
@@ -120,35 +174,35 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                             "Nationality": nationality,
                             "Gender": gender,
                             "PassportNumber": documentNumber,
-                            "DocumentType": guestData?.documentType,
-                            "IsPrimary": guestData?.IsPrimary,
-                            "MembershipType": guestData?.MembershipType,
-                            "MembershipNumber": guestData?.MembershipNumber,
-                            "MembershipID": guestData?.MembershipID,
-                            "MembershipName": guestData?.MembershipName,
-                            "MembershipClass": guestData?.MembershipClass,
-                            "MembershipLevel": guestData?.MembershipLevel,
+                            "DocumentType": guestDetails?.DocumentType,
+                            "IsPrimary": guestDetails?.IsPrimary,
+                            "MembershipType": guestDetails?.MembershipType,
+                            "MembershipNumber": guestDetails?.MembershipNumber,
+                            "MembershipID": guestDetails?.MembershipID,
+                            "MembershipName": guestDetails?.MembershipName,
+                            "MembershipClass": guestDetails?.MembershipClass,
+                            "MembershipLevel": guestDetails?.MembershipLevel,
                             "FirstName": givenName,
                             "MiddleName": middleName,
                             "LastName": familyName,
-                            "Phones": guestData?.Phones,
-                            "Address": guestData?.Address,
-                            "Email": guestData?.Email,
+                            "Phones": reservationData?.Phones,
+                            "Address": reservationData?.Address,
+                            "Email": reservationData?.Email,
                             "BirthDate": dateOfBirth,
                             "IssueDate": issueDate,
                             "IssueCountry": placeOfIssue,
-                            "IsActive": guestData?.IsActive,
-                            "Title": guestData?.Title,
-                            "VipCode": guestData?.VipCode,
-                            "CloudProfileDetailID": guestData?.CloudProfileDetailID
+                            "IsActive": reservationData?.IsActive,
+                            "Title": reservationData?.Title,
+                            "VipCode": reservationData?.VipCode,
+                            "CloudProfileDetailID": null
                         }
                     ],
-                    "Alerts": guestData?.Alerts,
-                    "IsMemberShipEnrolled": guestData?.IsMemberShipEnrolled,
-                    "reservationDocument": guestData?.reservationDocument,
-                    "GuestSignature": guestData?.GuestSignature,
-                    "FolioEmail": guestData?.FolioEmail,
-                    "IsBreakFastAvailable": guestData?.IsBreakFastAvailable
+                    "Alerts": reservationData?.Alerts,
+                    "IsMemberShipEnrolled": reservationData?.IsMemberShipEnrolled,
+                    "reservationDocument": reservationData?.reservationDocument,
+                    "GuestSignature": reservationData?.GuestSignature,
+                    "FolioEmail": reservationData?.FolioEmail || '',
+                    "IsBreakFastAvailable": reservationData?.IsBreakFastAvailable
                 }
             ],
             "SyncFromCloud": true
@@ -163,7 +217,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             "language": settings.language,
             "legNumber": settings.legNumber,
             "chainCode": settings.chainCode,
-            "destinationEntityID": settings.destinationId,
+            "destinationEntityID": settings.destinationEntityID,
             "destinationSystemType": settings.destinationSystemType,
             "CreateAccompanyingProfileRequest": {
                 "ReservationNumber": reservationNumberState,
@@ -176,38 +230,48 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
 
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const corsProxyUrl2 = 'https://cors-anywhere.herokuapp.com/';
             const apiUrl1 = 'http://qcapi.saavy-pay.com:8082/api/local/PushReservationDetails';
             const apiUrl2 = 'http://qcapi.saavy-pay.com:8082/api/ows/CreateAccompanyingGuset';
 
-            let response;
+            let response = {};
+            let response2 = {};
 
-           
+
+            if (!pmsProfileId) {
+
+                response2 = await axios.post(apiUrl2, requestBody2, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log('create new accompany api save successful:', response2.data);
+
+            }
+
+            if (response2.data && response2.data.result) {
+                const responseData = response2.data?.responseData;
+                setPmsProfileId(responseData.PmsProfileID);
+                console.log('Response Data:', responseData);
+            }
+
+            await updatePassportDetails(pmsProfileId);
+            await handleUpdateName();
+            await handleUpdateEmail();
+            await handleUpdatePhone();
+            // await handleUpdateAddress();
             response = await axios.post(corsProxyUrl + apiUrl1, requestBody1, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
             console.log('First save successful:', response.data);
-
-
-            if (!pmsProfileId) {
-                
-                response = await axios.post(corsProxyUrl2 + apiUrl2, requestBody2, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                console.log('create new accompany api save successful:', response.data);
-
-            }
-
             if (response.data && response.data.result) {
                 const responseData = response.data.responseData;
                 console.log('Response Data:', responseData);
             } else {
                 console.error('Save failed:', response.data);
             }
+
         } catch (error) {
             if (error.response) {
                 console.error('Server responded with non-2xx status:', error.response.data);
@@ -220,9 +284,98 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         }
     };
 
-
     const handleCancel = () => {
         console.log('Cancel editing guest details...');
+    };
+
+    const updatePassportDetails = async (pmsProfileId) => {
+        try {
+            let guestDetails = await getGuestDetails(pmsProfileId);
+
+            if (!guestDetails) {
+                throw new Error('Guest details not found');
+            }
+
+            const phoneDetails = guestDetails.Phones ? guestDetails.Phones[0] : {};
+            const emailDetails = guestDetails.Email ? guestDetails.Email[0] : {};
+            const addressDetails = guestDetails.Address && guestDetails.Address.length > 0 ? guestDetails.Address[0] : {};
+
+            const requestBody = {
+                hotelDomain: settings.hotelDomain,
+                kioskID: settings.kioskId,
+                username: settings.username,
+                password: settings.password,
+                systemType: settings.systemType,
+                language: settings.language,
+                legNumber: settings.legNumber,
+                chainCode: settings.chainCode,
+                destinationEntityID: settings.destinationEntityID,
+                destinationSystemType: settings.destinationSystemType,
+                UpdateProileRequest: {
+                    addresses: [
+                        {
+                            addressType: addressDetails.addressType || '',
+                            operaId: addressDetails.operaId || 0,
+                            primary: addressDetails.primary || true,
+                            displaySequence: addressDetails.displaySequence || 1,
+                            address1: addressDetails.address1 || '',
+                            address2: addressDetails.address2 || '',
+                            city: addressDetails.city || '',
+                            state: addressDetails.state || '',
+                            country: addressDetails.country || '',
+                            zip: addressDetails.zip || ''
+                        }
+                    ],
+                    profileID: pmsProfileId,
+                    emails: [
+                        {
+                            emailType: emailDetails.emailType || '',
+                            operaId: emailDetails.operaId || 0,
+                            primary: emailDetails.primary || true,
+                            displaySequence: emailDetails.displaySequence || 1,
+                            email: email || ''
+                        }
+                    ],
+                    phones: [
+                        {
+                            phoneType: phoneDetails.phoneType || '',
+                            phoneRole: phoneDetails.phoneRole || '',
+                            operaId: phoneDetails.operaId || 0,
+                            primary: phoneDetails.primary || true,
+                            displaySequence: phoneDetails.displaySequence || 1,
+                            phoneNumber: phoneNumber || ''
+                        }
+                    ],
+                    dob: dateOfBirth || '',
+                    gender: gender || '',
+                    nationality: nationality || '',
+                    issueCountry: placeOfIssue || '',
+                    documentNumber: documentNumber || '',
+                    documentType: documentType || '',
+                    issueDate: issueDate || '',
+                    expiryDate: expiryDate || ''
+                }
+            };
+
+            console.log(requestBody);
+            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdatePassport';
+
+            const response = await axios.post(apiUrl, requestBody, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('Update passport details successful:', response.data);
+        } catch (error) {
+            if (error.response) {
+                console.error('Server responded with non-2xx status:', error.response.data);
+            } else if (error.request) {
+                console.error('No response received:', error.request);
+            } else {
+                console.error('Error setting up the request:', error.message);
+            }
+            console.error('Failed to update passport details:', error);
+        }
     };
 
     const handleScan = async () => {
@@ -268,85 +421,6 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     };
 
 
-    // const handleUpdatePassport = async () => {
-    //     const requestBody = {
-    //         hotelDomain: "EU",
-    //         kioskID: "KIOSK",
-    //         username: "SUPERVISOR",
-    //         password: "PEGASUS2021",
-    //         systemType: "KIOSK",
-    //         language: "EN",
-    //         legNumber: 1,
-    //         chainCode: "CHA",
-    //         destinationEntityID: "TI",
-    //         destinationSystemType: "PMS",
-    //         UpdateProileRequest: {
-    //             addresses: [
-    //                 {
-    //                     addressType: "HOME",
-    //                     operaId: 0,
-    //                     primary: true,
-    //                     displaySequence: 1,
-    //                     address1: "addres1",
-    //                     address2: "address2",
-    //                     city: "test city",
-    //                     state: null,
-    //                     country: null,
-    //                     zip: "123456"
-    //                 }
-    //             ],
-    //             profileID: pmsProfileId,
-    //             emails: [
-    //                 {
-    //                     emailType: "EMAIL",
-    //                     operaId: 0,
-    //                     primary: true,
-    //                     displaySequence: 1,
-    //                     email: "test@mail.com"
-    //                 }
-    //             ],
-    //             phones: [
-    //                 {
-    //                     phoneType: "MOBILE",
-    //                     phoneRole: "PHONE",
-    //                     operaId: 0,
-    //                     primary: true,
-    //                     displaySequence: 1,
-    //                     phoneNumber: "123456"
-    //                 }
-    //             ],
-    //             dob: dateOfBirth,
-    //             gender: gender,
-    //             nationality: nationality,
-    //             issueCountry: placeOfIssue,
-    //             documentNumber: documentNumber,
-    //             documentType: documentType,
-    //             issueDate: issueDate
-    //         }
-    //     };
-
-    //     try {
-    //         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-    //         const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdatePassport';
-
-    //         const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
-    //             headers: {
-    //                 'Content-Type': 'application/json'
-    //             }
-    //         });
-    //         console.log('Update passport details successful:', response.data);
-    //     } catch (error) {
-    //         if (error.response) {
-    //             console.error('Server responded with non-2xx status:', error.response.data);
-    //         } else if (error.request) {
-    //             console.error('No response received:', error.request);
-    //         } else {
-    //             console.error('Error setting up the request:', error.message);
-    //         }
-    //         console.error('Failed to update passport details:', error);
-    //     }
-    // };
-
     const handleUpdateName = async () => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
@@ -357,7 +431,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             language: settings.language,
             legNumber: settings.legNumber,
             chainCode: settings.chainCode,
-            destinationEntityID: settings.destinationId,
+            destinationEntityID: settings.destinationEntityID,
             destinationSystemType: settings.destinationSystemType,
             UpdateProileRequest: {
                 profileID: pmsProfileId,
@@ -372,7 +446,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdateName';
 
-            const response = await axios.post( apiUrl, requestBody, {
+            const response = await axios.post(apiUrl, requestBody, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -391,67 +465,54 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     };
 
     const handleUpdatePhone = async () => {
-        const requestBody = {
-            hotelDomain: settings.hotelDomain,
-            kioskID: settings.kioskId,
-            username: settings.username,
-            password: settings.password,
-            systemType: settings.systemType,
-            language: settings.language,
-            legNumber: settings.legNumber,
-            chainCode: settings.chainCode,
-            destinationEntityID: settings.destinationId,
-            destinationSystemType: settings.destinationSystemType,
-            UpdateProileRequest: {
-                addresses: [
-                    {
-                        addressType: guestData?.addressType,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        address1: guestData?.address1,
-                        address2: guestData?.address2,
-                        city: guestData?.city,
-                        state: guestData?.state,
-                        country: guestData?.country,
-                        zip: guestData?.zip
-                    }
-                ],
-                profileID: pmsProfileId,
-                emails: [
-                    {
-                        emailType: guestData?.emailType,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        email: guestData?.email
-                    }
-                ],
-                phones: [
-                    {
-                        phoneType: guestData?.phoneType,
-                        phoneRole: guestData?.phoneRole,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        phoneNumber: phoneNumber
-                    }
-                ],
-                dob: guestData?.dob,
-                gender: guestData?.gender,
-                nationality: guestData?.nationality,
-                issueCountry: guestData?.issueCountry,
-                documentNumber: guestData?.documentNumber,
-                documentType: guestData?.documentType,
-                issueDate: guestData?.issueDate
-            }
-        };
-
         try {
+            var guestDetails = await getGuestDetails(pmsProfileId);
+            if (!guestDetails) {
+                throw new Error('Guest details not found');
+            }
+
+            const phoneDetails = guestDetails.Phones ? guestDetails.Phones[0] : {};
+
+            const requestBody = {
+                hotelDomain: settings.hotelDomain,
+                kioskID: settings.kioskId,
+                username: settings.username,
+                password: settings.password,
+                systemType: settings.systemType,
+                language: settings.language,
+                legNumber: settings.legNumber,
+                chainCode: settings.chainCode,
+                destinationEntityID: settings.destinationEntityID,
+                destinationSystemType: settings.destinationSystemType,
+                UpdateProileRequest: {
+                    addresses: null,
+                    profileID: pmsProfileId,
+                    emails: null,
+                    phones: [
+                        {
+                            phoneType: phoneDetails.phoneType || '',
+                            phoneRole: phoneDetails.phoneRole || '',
+                            operaId: phoneDetails.operaId || '',
+                            primary: phoneDetails.primary || false,
+                            displaySequence: phoneDetails.displaySequence || 0,
+                            phoneNumber: phoneNumber
+                        }
+                    ],
+                    dob: guestDetails.BirthDate || '',
+                    gender: guestDetails.Gender || '',
+                    nationality: guestDetails.Nationality || '',
+                    issueCountry: guestDetails.issueCountry || '',
+                    documentNumber: guestDetails.PassportNumber || '',
+                    documentType: guestDetails.DocumentType || '',
+                    issueDate: guestDetails.IssueDate || ''
+                }
+            };
+
+            console.log(requestBody);
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdatePhoneList';
 
-            const response = await axios.post( apiUrl, requestBody, {
+            const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -479,50 +540,28 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             language: settings.language,
             legNumber: settings.legNumber,
             chainCode: settings.chainCode,
-            destinationEntityID: settings.destinationId,
+            destinationEntityID: settings.destinationEntityID,
             destinationSystemType: settings.destinationSystemType,
             UpdateProileRequest: {
-                addresses: [
-                    {
-                        addressType: guestData?.addressType,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        address1: guestData?.address1,
-                        address2: guestData?.address2,
-                        city: guestData?.city,
-                        state: guestData?.state,
-                        country: guestData?.country,
-                        zip: guestData?.zip
-                    }
-                ],
+                addresses: null,
                 profileID: pmsProfileId,
                 emails: [
                     {
-                        emailType: guestData?.emailType,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
+                        emailType: reservationData?.GemailType,
+                        operaId: reservationData?.operaId,
+                        primary: reservationData?.primary,
+                        displaySequence: reservationData?.displaySequence,
                         email: email
                     }
                 ],
-                phones: [
-                    {
-                        phoneType: guestData?.phoneType,
-                        phoneRole: guestData?.phoneRole,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        phoneNumber: phoneNumber
-                    }
-                ],
-                dob: guestData?.dob,
-                gender: guestData?.gender,
-                nationality: guestData?.nationality,
-                issueCountry: guestData?.issueCountry,
-                documentNumber: guestData?.documentNumber,
-                documentType: guestData?.documentType,
-                issueDate: guestData?.issueDate
+                phones: null,
+                dob: reservationData?.dob,
+                gender: reservationData?.gender,
+                nationality: reservationData?.nationality,
+                issueCountry: reservationData?.issueCountry,
+                documentNumber: reservationData?.documentNumber,
+                documentType: reservationData?.documentType,
+                issueDate: reservationData?.issueDate
             }
         };
 
@@ -558,50 +597,33 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             language: settings.language,
             legNumber: settings.legNumber,
             chainCode: settings.chainCode,
-            destinationEntityID: settings.destinationId,
+            destinationEntityID: settings.destinationEntityID,
             destinationSystemType: settings.destinationSystemType,
             UpdateProileRequest: {
                 addresses: [
                     {
-                        addressType: guestData?.addressType,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        address1: guestData?.address1,
-                        address2: guestData?.address2,
-                        city: guestData?.city,
-                        state: guestData?.state,
-                        country: guestData?.country,
-                        zip: guestData?.zip
+                        addressType: reservationData?.GuestProfiles[0].addresses[0].addressType,
+                        operaId: reservationData?.GuestProfiles[0].addresses[0].operaId,
+                        primary: reservationData?.GuestProfiles[0].addresses[0].primary,
+                        displaySequence: reservationData?.GuestProfiles[0].addresses[0].displaySequence,
+                        address1: reservationData?.GuestProfiles[0].addresses[0].address1,
+                        address2: reservationData?.GuestProfiles[0].addresses[0].address2,
+                        city: reservationData?.GuestProfiles[0].addresses[0].city,
+                        state: reservationData?.GuestProfiles[0].addresses[0].state,
+                        country: reservationData?.GuestProfiles[0].addresses[0].country,
+                        zip: reservationData?.GuestProfiles[0].addresses[0].zip
                     }
                 ],
                 profileID: pmsProfileId,
-                emails: [
-                    {
-                        emailType: guestData?.emailType,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        email: guestData?.email
-                    }
-                ],
-                phones: [
-                    {
-                        phoneType: guestData?.phoneType,
-                        phoneRole: guestData?.phoneRole,
-                        operaId: guestData?.operaId,
-                        primary: guestData?.primary,
-                        displaySequence: guestData?.displaySequence,
-                        phoneNumber: phoneNumber
-                    }
-                ],
-                dob: guestData?.dob,
-                gender: guestData?.gender,
-                nationality: guestData?.nationality,
-                issueCountry: guestData?.issueCountry,
-                documentNumber: guestData?.documentNumber,
-                documentType: guestData?.documentType,
-                issueDate: guestData?.issueDate
+                emails: null,
+                phones: null,
+                dob: reservationData?.dob,
+                gender: reservationData?.gender,
+                nationality: reservationData?.nationality,
+                issueCountry: reservationData?.issueCountry,
+                documentNumber: reservationData?.documentNumber,
+                documentType: reservationData?.documentType,
+                issueDate: reservationData?.issueDate
             }
         };
 
@@ -626,9 +648,6 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             console.error('Failed to update address list:', error);
         }
     };
-
-
-    // const handleUpdateReservationDetails = async () => {
     //     const requestBody = {
     //         "RequestObject": [
     //             {
@@ -802,11 +821,13 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                 <div className="document-type">
                     <label>Document Type</label>
                     <select value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
-                        <option value="Passport">Passport</option>
-                        <option value="Id Card">Id Card</option>
-                        <option value="Visa">Visa</option>
+                        <option value="">Select Document Type</option>
+                        <option value="PASSPORT">Passport</option>
+                        <option value="IDCARD">ID Card</option>
+                        <option value="VISA">Visa</option>
                     </select>
                 </div>
+
                 <div className="document-number">
                     <label>Document Number</label>
                     <input type="text" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} />
@@ -833,6 +854,8 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                 <div className="gender">
                     <label>Gender</label>
                     <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                    <option value="">Select Gender</option>
+
                         <option value="M">Male</option>
                         <option value="F">Female</option>
                         <option value="O">Other</option>
