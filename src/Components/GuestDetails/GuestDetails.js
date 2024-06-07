@@ -68,10 +68,18 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     useEffect(() => {
         if (reservationId) {
             fetchReservationData(reservationId).then(data => {
-                setReservationData(data.responseData[0]);
+                if (data && data.responseData && data.responseData.length > 0) {
+                    setReservationData(data.responseData[0]);
+                } else {
+                    console.warn('No reservation data found');
+                }
+            }).catch(error => {
+                console.error('Failed to fetch reservation data:', error);
             });
         }
+    }, [reservationId]);
 
+    useEffect(() => {
         if (guestData) {
             setPmsProfileId(guestData.PmsProfileID || '');
             setDocumentType(guestData.DocumentType || '');
@@ -94,11 +102,13 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         } else if (reservationNumber) {
             setReservationNumber(reservationNumber);
         }
-
-        if (guestData && guestData.PmsProfileID && reservationNumber) {
-            fetchProfileDocuments(guestData.PmsProfileID);
-        }
     }, [guestData, reservationNumber]);
+
+    useEffect(() => {
+        if (reservationData && guestData && guestData.PmsProfileID) {
+            fetchProfileDocuments(guestData.PmsProfileID, reservationData.ReservationNameID);
+        }
+    }, [reservationData, guestData]);
 
     if (!isVisible) return null;
 
@@ -384,7 +394,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         }
     };
 
-  
+
 
     const handleScan = async () => {
         try {
@@ -465,13 +475,11 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             });
     };
 
-    const fetchProfileDocuments = (pmsProfileId) => {
-        fetchReservationData();
-
+    const fetchProfileDocuments = (pmsProfileId, reservationNameID) => {
         const requestBody = {
             RequestObject: {
                 ProfileID: pmsProfileId,
-                ReservationNameID: reservationNameId
+                ReservationNameID: reservationNameID
             },
             SyncFromCloud: null
         };
@@ -508,9 +516,9 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                 setFamilyName(profileData.LastName || '');
             }
         })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+        .catch((error) => {
+            console.error('Error:', error);
+        });
     };
     const handleUpdateName = async () => {
         const requestBody = {
