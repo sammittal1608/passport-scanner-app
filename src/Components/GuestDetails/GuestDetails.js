@@ -65,7 +65,6 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     const [reservationNumberState, setReservationNumber] = useState('');
     const [reservationData, setReservationData] = useState('');
 
-
     useEffect(() => {
         if (reservationId) {
             fetchReservationData(reservationId).then(data => {
@@ -74,7 +73,6 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         }
 
         if (guestData) {
-
             setPmsProfileId(guestData.PmsProfileID || '');
             setDocumentType(guestData.DocumentType || '');
             setNationality(guestData.Nationality || '');
@@ -95,6 +93,10 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             setReservationNumber(guestData.ReservationNumber || reservationNumber);
         } else if (reservationNumber) {
             setReservationNumber(reservationNumber);
+        }
+
+        if (guestData && guestData.PmsProfileID && reservationNumber) {
+            fetchProfileDocuments(guestData.PmsProfileID);
         }
     }, [guestData, reservationNumber]);
 
@@ -254,11 +256,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                 console.log('Response Data:', responseData);
             }
 
-            await updatePassportDetails(pmsProfileId);
-            await handleUpdateName();
-            await handleUpdateEmail();
-            await handleUpdatePhone();
-            // await handleUpdateAddress();
+
             response = await axios.post(corsProxyUrl + apiUrl1, requestBody1, {
                 headers: {
                     'Content-Type': 'application/json'
@@ -271,6 +269,14 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             } else {
                 console.error('Save failed:', response.data);
             }
+
+            await updatePassportDetails(pmsProfileId);
+            pushDocumentDetails();
+            await handleUpdateName();
+            await handleUpdateEmail();
+            await handleUpdatePhone();
+            // await handleUpdateAddress();
+
 
         } catch (error) {
             if (error.response) {
@@ -296,8 +302,8 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                 throw new Error('Guest details not found');
             }
 
-            const phoneDetails = guestDetails.Phones ? guestDetails.Phones[0] : {};
-            const emailDetails = guestDetails.Email ? guestDetails.Email[0] : {};
+            const phoneDetails = guestDetails.Phones && guestDetails.Phones.length > 0 ? guestDetails.Phones[0] : {};
+            const emailDetails = guestDetails.Email && guestDetails.Email.length > 0 ? guestDetails.Email[0] : {};
             const addressDetails = guestDetails.Address && guestDetails.Address.length > 0 ? guestDetails.Address[0] : {};
 
             const requestBody = {
@@ -378,6 +384,8 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         }
     };
 
+  
+
     const handleScan = async () => {
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
@@ -420,7 +428,90 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         }
     };
 
+    const pushDocumentDetails = () => {
+        const requestBody = {
+            RequestObject: [
+                {
+                    ReservationNameID: reservationData.ReservationNameID,
+                    ProfileID: pmsProfileId,
+                    DocumentNumber: documentNumber,
+                    ExpiryDate: expiryDate,
+                    IssueDate: issueDate,
+                    DocumentImage1: documentImage,
+                    DocumentImage2: null,
+                    DocumentImage3: null,
+                    FaceImage: faceImage,
+                    CloudProfileDetailID: "",
+                    DocumentTypeCode: null,
+                    IssueCountry: placeOfIssue
+                }
+            ],
+            SyncFromCloud: null
+        };
 
+        fetch('http://qcapi.saavy-pay.com:8082/api/local/PushDocumentDetails', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    };
+
+    const fetchProfileDocuments = (pmsProfileId) => {
+        fetchReservationData();
+
+        const requestBody = {
+            RequestObject: {
+                ProfileID: pmsProfileId,
+                ReservationNameID: reservationNameId
+            },
+            SyncFromCloud: null
+        };
+
+        fetch('http://qcapi.saavy-pay.com:8082/api/local/FetchProfileDocumentImageByProfileID', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+                return response.text();
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (typeof data === 'string') {
+                console.error('Error page HTML:', data);
+            } else if (data.result) {
+                const profileData = data.responseData[0];
+                setDocumentType(profileData.DocumentType || '');
+                setNationality(profileData.Nationality || '');
+                setDocumentNumber(profileData.DocumentNumber || '');
+                setIssueDate(profileData.IssueDate ? profileData.IssueDate.split('T')[0] : '');
+                setExpiryDate(profileData.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
+                setPlaceOfIssue(profileData.IssueCountry || '');
+                setDocumentImage(profileData.DocumentImage1 || null);
+                setFaceImage(profileData.FaceImage || null);
+                setGivenName(profileData.FirstName || '');
+                setMiddleName(profileData.MiddleName || '');
+                setFamilyName(profileData.LastName || '');
+            }
+        })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    };
     const handleUpdateName = async () => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
@@ -854,7 +945,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                 <div className="gender">
                     <label>Gender</label>
                     <select value={gender} onChange={(e) => setGender(e.target.value)}>
-                    <option value="">Select Gender</option>
+                        <option value="">Select Gender</option>
 
                         <option value="M">Male</option>
                         <option value="F">Female</option>
