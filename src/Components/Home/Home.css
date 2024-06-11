@@ -31,7 +31,8 @@
     background-color: #E8E8E8;
     height: 100vh;
 }
-.bi-plus-lg{
+
+.bi-plus-lg {
     margin-left: 0.5rem;
 }
 
@@ -44,9 +45,7 @@
     flex-direction: column;
     align-items: center;
     margin: 1rem 6.5rem;
-    height: 27rem;
     transition: height 0.3s ease-in-out;
-
 }
 
 h4 {
@@ -61,7 +60,7 @@ h4 {
     color: #5796CA;
     padding: 0.5rem 1.5rem;
     font-weight: 500;
-    }
+}
 
 .btn:hover {
     border: 1px solid #5796CA;
@@ -74,7 +73,9 @@ h4 {
 .add-button-container {
     display: flex;
     justify-content: space-between;
-
+    width: 100%;
+    /* padding: 0 4.7rem; */
+    margin-bottom: 1rem;
 }
 
 .reservation-data {
@@ -89,7 +90,7 @@ h4 {
 }
 
 .info {
-    flex: 1;
+    flex: 1 1 30%; 
     min-width: 150px;
     text-align: center;
     margin: 10px 0;
@@ -101,19 +102,14 @@ h4 {
     padding: 10px;
 }
 
-.add-guest-button {
-    display: block;
-    margin: 10px auto;
-    padding: 10px 20px;
-    background-color: #0056b3;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
+.check-in-out-container{
+    display: flex;
+    gap: 1rem;
 }
+.check-in-out-container i{
+margin-left: 1rem;
 
-.add-guest-button:hover {
-    background-color: #004494;
+
 }
 
 .guest {
@@ -131,8 +127,27 @@ h4 {
     outline: none;
     font-size: 16px;
     border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .accordion:hover {
     background-color: #2A4262;
 }
+
+.accordion-icon {
+    margin-left: auto;
+    font-size: 1.2em; 
+}
+.info input.form-control {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.info div {
+    cursor: pointer;
+}
+

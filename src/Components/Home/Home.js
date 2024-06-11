@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import logo from '../../Images/logo.png';
 import ID_GO from '../../Images/ID-GO.png';
 import './Home.css';
 import GuestDetails from '../GuestDetails/GuestDetails';
 import settings from '../../app.settings';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const fetchReservationData = async (reservationId) => {
     try {
@@ -43,6 +44,88 @@ const fetchReservationData = async (reservationId) => {
     }
 };
 
+const handleCheckIn = async (reservationNameID) => {
+    try {
+        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckIn', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                hotelDomain: settings.hotelDomain,
+                kioskID: settings.kioskId,
+                username: settings.username,
+                password: settings.password,
+                systemType: settings.systemType,
+                language: settings.language,
+                legNumber: settings.legNumber,
+                chainCode: settings.chainCode,
+                destinationEntityID: settings.destinationEntityID,
+                destinationSystemType: settings.destinationSystemType,
+                SendFolio: settings.SendFolio,
+                OperaReservation: {
+                    ReservationNameID: reservationNameID
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Check-in successful:", data);
+    } catch (error) {
+        console.error("Failed to check in:", error);
+    }
+};
+
+const handleCheckOut = async (reservationNameID) => {
+    try {
+        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckOut', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                hotelDomain: "EU",
+                kioskID: "KIOSK",
+                username: "SUPERVISOR",
+                password: "PEGASUS2021",
+                systemType: "KIOSK",
+                language: "EN",
+                legNumber: null,
+                chainCode: "CHA",
+                destinationEntityID: "TI",
+                destinationSystemType: "PMS",
+                SendFolio: false,
+                OperaReservation: {
+                    ReservationNameID: reservationNameID
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Check-out successful:", data);
+    } catch (error) {
+        console.error("Failed to check out:", error);
+    }
+};
+
+const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+const formatTime = (dateString) => {
+    const options = { hour: '2-digit', minute: '2-digit' };
+    return new Date(dateString).toLocaleTimeString(undefined, options);
+};
+
 function Home() {
     const { reservationId } = useParams();
     const [reservationData, setReservationData] = useState(null);
@@ -50,6 +133,13 @@ function Home() {
     const [visibleGuestIndex, setVisibleGuestIndex] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isButtonClicked, setIsButtonClicked] = useState(false);
+    const [isEditingRoomNumber, setIsEditingRoomNumber] = useState(false);
+    const [isEditingAdults, setIsEditingAdults] = useState(false);
+    const [editableRoomNumber, setEditableRoomNumber] = useState('');
+    const [editableAdults, setEditableAdults] = useState('');
+
+    const roomNumberRef = useRef(null);
+    const adultsRef = useRef(null);
 
     useEffect(() => {
         if (reservationId) {
@@ -58,6 +148,8 @@ function Home() {
                     setReservationData(data.responseData[0]);
                     const guestProfiles = data.responseData[0].GuestProfiles || [];
                     setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
+                    setEditableRoomNumber(data.responseData[0].RoomDetails.RoomNumber);
+                    setEditableAdults(data.responseData[0].Adults);
                 }
             });
         }
@@ -72,6 +164,48 @@ function Home() {
         setVisibleGuestIndex(visibleGuestIndex === index ? null : index);
         setIsExpanded(visibleGuestIndex === index ? false : true);
     };
+
+    const handleRoomNumberChange = (event) => {
+        setEditableRoomNumber(event.target.value);
+    };
+
+    const handleAdultsChange = (event) => {
+        setEditableAdults(event.target.value);
+    };
+
+    const handleRoomNumberClick = () => {
+        setIsEditingRoomNumber(true);
+    };
+
+    const handleAdultsClick = () => {
+        setIsEditingAdults(true);
+    };
+
+    const handleOutsideClick = (event) => {
+        if (roomNumberRef.current && !roomNumberRef.current.contains(event.target)) {
+            setIsEditingRoomNumber(false);
+        }
+        if (adultsRef.current && !adultsRef.current.contains(event.target)) {
+            setIsEditingAdults(false);
+        }
+    };
+
+    const handleKeyPress = (event, type) => {
+        if (event.key === 'Enter') {
+            if (type === 'roomNumber') {
+                setIsEditingRoomNumber(false);
+            } else if (type === 'adults') {
+                setIsEditingAdults(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        };
+    }, []);
 
     if (!reservationData) {
         return <div>Loading...</div>;
@@ -89,15 +223,31 @@ function Home() {
                 </div>
             </header>
             <div className='bottom'>
-                <div className="reservation-info" style={{ height: `${isExpanded ? (27 + guests.length * 5) * 2.5 : 27 + guests.length * 5}rem` }}>
+                <div className="reservation-info" style={{ height: `${isExpanded ? (30 + guests.length * 5) * 2.5 : 27 + guests.length * 5}rem` }}>
                     <div className='reservation-data'>
                         <div className="info">
                             <div>RESERVATION NUMBER</div>
                             <div>{reservationData.ReservationNumber}</div>
                         </div>
                         <div className="info">
+                            <div>RESERVATION STATUS</div>
+                            <div>{reservationData.ReservationStatus}</div>
+                        </div>
+                        <div className="info">
                             <div>ROOM NUMBER</div>
-                            <div>{reservationData.RoomDetails.RoomNumber}</div>
+                            {isEditingRoomNumber ? (
+                                <input
+                                    type="text"
+                                    value={editableRoomNumber}
+                                    onChange={handleRoomNumberChange}
+                                    className="form-control"
+                                    ref={roomNumberRef}
+                                    onKeyPress={(e) => handleKeyPress(e, 'roomNumber')}
+                                    onBlur={() => setIsEditingRoomNumber(false)}
+                                />
+                            ) : (
+                                <div onClick={handleRoomNumberClick}>{editableRoomNumber}</div>
+                            )}
                         </div>
                         <div className="info">
                             <div>GUEST NAME</div>
@@ -105,37 +255,65 @@ function Home() {
                         </div>
                         <div className="info">
                             <div>ARRIVAL DATE</div>
-                            <div>{reservationData.ArrivalDate}</div>
+                            <div>{formatDate(reservationData.ArrivalDate)}</div>
+                        </div>
+                        <div className="info">
+                            <div>ARRIVAL TIME</div>
+                            <div>{formatTime(reservationData.ArrivalDate)}</div>
                         </div>
                         <div className="info">
                             <div>DEPARTURE DATE</div>
-                            <div>{reservationData.DepartureDate}</div>
+                            <div>{formatDate(reservationData.DepartureDate)}</div>
                         </div>
                         <div className="info">
                             <div>ADULT COUNT</div>
-                            <div>{reservationData.Adults}</div>
+                            {isEditingAdults ? (
+                                <input
+                                    type="number"
+                                    value={editableAdults}
+                                    onChange={handleAdultsChange}
+                                    className="form-control"
+                                    ref={adultsRef}
+                                    onKeyPress={(e) => handleKeyPress(e, 'adults')}
+                                    onBlur={() => setIsEditingAdults(false)}
+                                />
+                            ) : (
+                                <div onClick={handleAdultsClick}>{editableAdults}</div>
+                            )}
+                        </div>
+                        <div className="info">
+                            <div>CHILD COUNT</div>
+                            <div>{reservationData.Child !== undefined ? reservationData.Child : ''}</div>
                         </div>
                     </div>
-                    <div className="guest-details">
-                        <div className='add-button-container'>
-                            <h4>Guest Details</h4>
-                            <button type="button"
-                                className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`}
-                                onClick={addGuest}>
-                                Add Guest
-                                <i className="bi bi-plus-lg"></i>
+                    <div className='check-in-out-container'>
+                        {reservationData.ReservationStatus === 'RESERVED' && (
+                            <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckIn(reservationData.ReservationNameID)}>
+                                Check In
+                                <i className="bi bi-check-square"></i>
                             </button>
-                        </div>
+                        )}
+                        {reservationData.ReservationStatus === 'CHECK-IN' && (
+                            <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckOut(reservationData.ReservationNameID)}>
+                                Check Out
+                                <i className="bi bi-x-square"></i>
+                            </button>
+                        )}
+                    </div>
+                    <div className="guest-details">
                         {guests.map((guest, index) => (
                             <div className="guest" key={index}>
                                 <button className="accordion" onClick={() => toggleGuestDetails(index)}>
                                     {guest}
+                                    <i className={`bi ${visibleGuestIndex === index ? 'bi-chevron-up' : 'bi-chevron-down'} accordion-icon`}></i>
                                 </button>
                                 {visibleGuestIndex === index && (
                                     <GuestDetails
                                         isVisible={true}
                                         guestData={reservationData.GuestProfiles[index]}
                                         reservationNumber={reservationData.ReservationNumber}
+                                        addGuest={addGuest}
+                                        isButtonClicked={isButtonClicked}
                                     />
                                 )}
                             </div>

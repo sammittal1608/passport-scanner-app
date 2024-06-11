@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import settings from '../../app.settings.js';
 
-export const fetchReservationData = async (reservationId) => {
+const fetchReservationData = async (reservationId) => {
     try {
         const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation', {
             method: 'POST',
@@ -41,10 +41,10 @@ export const fetchReservationData = async (reservationId) => {
     }
 };
 
-
-function GuestDetails({ isVisible, guestData, reservationNumber }) {
+export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest, isButtonClicked }) {
     const { reservationId } = useParams();
 
+    const [saturated, setSalutation] = useState('');
     const [documentType, setDocumentType] = useState('');
     const [nationality, setNationality] = useState('');
     const [documentNumber, setDocumentNumber] = useState('');
@@ -59,11 +59,15 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     const [documentImage, setDocumentImage] = useState(null);
     const [faceImage, setFaceImage] = useState(null);
     const [pmsProfileId, setPmsProfileId] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [email, setEmail] = useState('');
+    const [documentImage2, setDocumentImage2] = useState('');
+    // const [phoneNumber, setPhoneNumber] = useState('');
+    // const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
     const [reservationNumberState, setReservationNumber] = useState('');
     const [reservationData, setReservationData] = useState('');
+    const [backScanButtonClicked, setBackScanButtonClicked] = useState(false);
+
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (reservationId) {
@@ -85,7 +89,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             setDocumentType(guestData.DocumentType || '');
             setNationality(guestData.Nationality || '');
             setDocumentNumber(guestData.PassportNumber || '');
-            setDateOfBirth(guestData.BirthDate ? guestData.BirthDate.split('T')[0] : '');
+            setDateOfBirth(displayDate(guestData.dateOfBirth || ''));
             setGivenName(guestData.FirstName || '');
             setMiddleName(guestData.MiddleName || '');
             setGender(guestData.Gender || '');
@@ -95,10 +99,12 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             setPlaceOfIssue(guestData.IssueCountry || '');
             setDocumentImage(guestData.DocumentImageBase64 || null);
             setFaceImage(guestData.FaceImageBase64 || null);
-            setPhoneNumber(guestData.PhoneNumber || '');
-            setEmail(guestData.Email || '');
+            setDocumentImage2(guestData.DocumentImageBase64 || null);
+            // setPhoneNumber(guestData.PhoneNumber || '');
+            // setEmail(guestData.Email || '');
             setAddress(guestData.Address || '');
             setReservationNumber(guestData.ReservationNumber || reservationNumber);
+            setSalutation(guestData.Saturated || '');
         } else if (reservationNumber) {
             setReservationNumber(reservationNumber);
         }
@@ -110,7 +116,22 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         }
     }, [reservationData, guestData]);
 
+    const fullName = `${givenName} ${middleName ? middleName + ' ' : ''}${familyName}`;
+
+
     if (!isVisible) return null;
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    const displayDate = (dateString) => {
+        return dateString === '0001-01-01T00:00:00' ? 'dd-mm-yyyy' : formatDate(dateString);
+    };
 
     const getGuestDetails = (pmsProfileID) => {
         const guestProfiles = reservationData.GuestProfiles;
@@ -118,107 +139,50 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
         return guestDetails;
     };
 
-    const handleSave = async () => {
-        var guestDetails = await getGuestDetails(pmsProfileId);
+    const handleValidation = () => {
+        const newErrors = {};
 
-        const requestBody1 = {
-            "RequestObject": [
-                {
-                    "ConfirmationNumber": reservationData?.ConfirmationNumber ?? '',
-                    "ReservationNumber": reservationNumberState,
-                    "ReservationNameID": reservationData?.ReservationNameID,
-                    "ArrivalDate": reservationData?.ArrivalDate,
-                    "DepartureDate": reservationData?.DepartureDate,
-                    "CreatedDateTime": reservationData?.CreatedDateTime,
-                    "Adults": reservationData?.Adult,
-                    "Child": reservationData?.Child,
-                    "ReservationStatus": reservationData?.ReservationStatus,
-                    "ComputedReservationStatus": reservationData?.ComputedReservationStatus,
-                    "LegNumber": reservationData?.LegNumber,
-                    "ChainCode": reservationData?.ChainCode,
-                    "ExpectedDepartureTime": reservationData?.ExpectedDepartureTime,
-                    "ExpectedArrivalTime": reservationData?.ExpectedArrivalTime,
-                    "ReservationSourceCode": reservationData?.ReservationSourceCode,
-                    "ReservationType": reservationData?.ReservationType,
-                    "PrintRate": reservationData?.PrintRate,
-                    "NoPost": reservationData?.NoPost,
-                    "DoNotMoveRoom": reservationData?.DoNotMoveRoom,
-                    "TotalAmount": reservationData?.TotalAmount,
-                    "TotalTax": reservationData?.TotalTax,
-                    "IsTaxInclusive": reservationData?.IsTaxInclusive,
-                    "CurrentBalance": reservationData?.CurrentBalance,
-                    "RoomDetails": {
-                        "RoomNumber": reservationData?.RoomDetails?.RoomNumber,
-                        "RoomType": reservationData?.RoomDetails?.RoomType,
-                        "RoomTypeDescription": reservationData?.RoomDetails?.RoomTypeDescription,
-                        "RoomTypeShortDescription": reservationData?.RoomDetails?.RoomTypeShortDescription,
-                        "RoomStatus": reservationData?.RoomDetails?.RoomStatus,
-                        "RTC": reservationData?.RoomDetails?.RTC,
-                        "RTCDescription": reservationData?.RoomDetails?.RTCDescription,
-                        "RTCShortDescription": reservationData?.RoomDetails?.RTCShortDescription
-                    },
-                    "RateDetails": {
-                        "RateCode": reservationData?.RateDetails?.RateCode,
-                        "RateAmount": reservationData?.RateDetails?.RateAmount,
-                        "DailyRates": reservationData?.RateDetails?.DailyRates,
-                        "IsMultipleRate": reservationData?.RateDetails?.IsMultipleRate
-                    },
-                    "PartyCode": reservationData?.PartyCode,
-                    "PaymentMethod": reservationData?.PaymentMethod,
-                    "IsPrimary": reservationData?.IsPrimary,
-                    "ETA": reservationData?.ETA,
-                    "FlightNo": reservationData?.FlightNo,
-                    "IsCardDetailPresent": reservationData?.IsCardDetailPresent,
-                    "IsDepositAvailable": reservationData?.IsDepositAvailable,
-                    "IsPreCheckedInPMS": reservationData?.IsPreCheckedInPMS,
-                    "IsSaavyPaid": reservationData?.IsSaavyPaid,
-                    "SharerReservations": reservationData?.SharerReservations,
-                    "DepositDetail": reservationData?.DepositDetail,
-                    "PreferanceDetails": reservationData?.PreferanceDetails,
-                    "PackageDetails": reservationData?.PackageDetails,
-                    "userDefinedFields": reservationData?.userDefinedFields,
-                    "GuestProfiles": [
-                        {
-                            "PmsProfileID": pmsProfileId,
-                            "FamilyName": familyName,
-                            "GivenName": givenName,
-                            "GuestName": `${givenName} ${familyName}`,
-                            "Nationality": nationality,
-                            "Gender": gender,
-                            "PassportNumber": documentNumber,
-                            "DocumentType": guestDetails?.DocumentType,
-                            "IsPrimary": guestDetails?.IsPrimary,
-                            "MembershipType": guestDetails?.MembershipType,
-                            "MembershipNumber": guestDetails?.MembershipNumber,
-                            "MembershipID": guestDetails?.MembershipID,
-                            "MembershipName": guestDetails?.MembershipName,
-                            "MembershipClass": guestDetails?.MembershipClass,
-                            "MembershipLevel": guestDetails?.MembershipLevel,
-                            "FirstName": givenName,
-                            "MiddleName": middleName,
-                            "LastName": familyName,
-                            "Phones": reservationData?.Phones,
-                            "Address": reservationData?.Address,
-                            "Email": reservationData?.Email,
-                            "BirthDate": dateOfBirth,
-                            "IssueDate": issueDate,
-                            "IssueCountry": placeOfIssue,
-                            "IsActive": reservationData?.IsActive,
-                            "Title": reservationData?.Title,
-                            "VipCode": reservationData?.VipCode,
-                            "CloudProfileDetailID": null
-                        }
-                    ],
-                    "Alerts": reservationData?.Alerts,
-                    "IsMemberShipEnrolled": reservationData?.IsMemberShipEnrolled,
-                    "reservationDocument": reservationData?.reservationDocument,
-                    "GuestSignature": reservationData?.GuestSignature,
-                    "FolioEmail": reservationData?.FolioEmail || '',
-                    "IsBreakFastAvailable": reservationData?.IsBreakFastAvailable
-                }
-            ],
-            "SyncFromCloud": true
-        };
+        const alphanumericRegex = /^[a-z0-9]+$/i;
+        const nameRegex = /^[a-zA-Z\s]+$/;
+
+        if (!alphanumericRegex.test(documentNumber)) {
+            newErrors.documentNumber = 'Document number should be alphanumeric';
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        if (dateOfBirth >= today) {
+            newErrors.dateOfBirth = 'Date of birth cannot be today or in the future';
+        }
+
+        if (!nameRegex.test(givenName)) {
+            newErrors.givenName = 'Given name should only contain letters';
+        }
+
+        if (middleName && !nameRegex.test(middleName)) {
+            newErrors.middleName = 'Middle name should only contain letters';
+        }
+
+        if (!nameRegex.test(familyName)) {
+            newErrors.familyName = 'Family name should only contain letters';
+        }
+
+        if (issueDate > today) {
+            newErrors.issueDate = 'Issue date cannot be in the future';
+        }
+
+        if (expiryDate < today) {
+            newErrors.expiryDate = 'Expiry date should not be a past date';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSave = async () => {
+        if (!handleValidation()) {
+            console.log("Form is invalid. Please correct the errors and try again.");
+            return;
+        }
 
         const requestBody2 = {
             "hotelDomain": settings.hotelDomain,
@@ -251,7 +215,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
 
             if (!pmsProfileId) {
 
-                response2 = await axios.post(apiUrl2, requestBody2, {
+                response2 = await axios.post(corsProxyUrl + apiUrl2, requestBody2, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
@@ -265,7 +229,106 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                 setPmsProfileId(responseData.PmsProfileID);
                 console.log('Response Data:', responseData);
             }
+            var guestDetails = await getGuestDetails(pmsProfileId);
 
+            const requestBody1 = {
+                "RequestObject": [
+                    {
+                        "ConfirmationNumber": reservationData?.ConfirmationNumber ?? '',
+                        "ReservationNumber": reservationNumberState,
+                        "ReservationNameID": reservationData?.ReservationNameID,
+                        "ArrivalDate": reservationData?.ArrivalDate,
+                        "DepartureDate": reservationData?.DepartureDate,
+                        "CreatedDateTime": reservationData?.CreatedDateTime,
+                        "Adults": reservationData?.Adult,
+                        "Child": reservationData?.Child,
+                        "ReservationStatus": reservationData?.ReservationStatus,
+                        "ComputedReservationStatus": reservationData?.ComputedReservationStatus,
+                        "LegNumber": reservationData?.LegNumber,
+                        "ChainCode": reservationData?.ChainCode,
+                        "ExpectedDepartureTime": reservationData?.ExpectedDepartureTime,
+                        "ExpectedArrivalTime": reservationData?.ExpectedArrivalTime,
+                        "ReservationSourceCode": reservationData?.ReservationSourceCode,
+                        "ReservationType": reservationData?.ReservationType,
+                        "PrintRate": reservationData?.PrintRate,
+                        "NoPost": reservationData?.NoPost,
+                        "DoNotMoveRoom": reservationData?.DoNotMoveRoom,
+                        "TotalAmount": reservationData?.TotalAmount,
+                        "TotalTax": reservationData?.TotalTax,
+                        "IsTaxInclusive": reservationData?.IsTaxInclusive,
+                        "CurrentBalance": reservationData?.CurrentBalance,
+                        "RoomDetails": {
+                            "RoomNumber": reservationData?.RoomDetails?.RoomNumber,
+                            "RoomType": reservationData?.RoomDetails?.RoomType,
+                            "RoomTypeDescription": reservationData?.RoomDetails?.RoomTypeDescription,
+                            "RoomTypeShortDescription": reservationData?.RoomDetails?.RoomTypeShortDescription,
+                            "RoomStatus": reservationData?.RoomDetails?.RoomStatus,
+                            "RTC": reservationData?.RoomDetails?.RTC,
+                            "RTCDescription": reservationData?.RoomDetails?.RTCDescription,
+                            "RTCShortDescription": reservationData?.RoomDetails?.RTCShortDescription
+                        },
+                        "RateDetails": {
+                            "RateCode": reservationData?.RateDetails?.RateCode,
+                            "RateAmount": reservationData?.RateDetails?.RateAmount,
+                            "DailyRates": reservationData?.RateDetails?.DailyRates,
+                            "IsMultipleRate": reservationData?.RateDetails?.IsMultipleRate
+                        },
+                        "PartyCode": reservationData?.PartyCode,
+                        "PaymentMethod": reservationData?.PaymentMethod,
+                        "IsPrimary": reservationData?.IsPrimary,
+                        "ETA": reservationData?.ETA,
+                        "FlightNo": reservationData?.FlightNo,
+                        "IsCardDetailPresent": reservationData?.IsCardDetailPresent,
+                        "IsDepositAvailable": reservationData?.IsDepositAvailable,
+                        "IsPreCheckedInPMS": reservationData?.IsPreCheckedInPMS,
+                        "IsSaavyPaid": reservationData?.IsSaavyPaid,
+                        "SharerReservations": reservationData?.SharerReservations,
+                        "DepositDetail": reservationData?.DepositDetail,
+                        "PreferanceDetails": reservationData?.PreferanceDetails,
+                        "PackageDetails": reservationData?.PackageDetails,
+                        "userDefinedFields": reservationData?.userDefinedFields,
+                        "GuestProfiles": [
+                            {
+                                "PmsProfileID": pmsProfileId,
+                                "FamilyName": familyName,
+                                "GivenName": givenName,
+                                "GuestName": `${givenName} ${familyName}`,
+                                "Nationality": nationality,
+                                "Gender": gender,
+                                "PassportNumber": documentNumber,
+                                "DocumentType": documentType,
+                                "IsPrimary": guestDetails?.IsPrimary || false,
+                                "MembershipType": guestDetails?.MembershipType || null,
+                                "MembershipNumber": guestDetails?.MembershipNumber || null,
+                                "MembershipID": guestDetails?.MembershipID || null,
+                                "MembershipName": guestDetails?.MembershipName || null,
+                                "MembershipClass": guestDetails?.MembershipClass || null,
+                                "MembershipLevel": guestDetails?.MembershipLevel || null,
+                                "FirstName": givenName,
+                                "MiddleName": middleName,
+                                "LastName": familyName,
+                                "Phones": reservationData?.Phones,
+                                "Address": reservationData?.Address,
+                                "Email": reservationData?.Email,
+                                "BirthDate": dateOfBirth,
+                                "IssueDate": issueDate,
+                                "IssueCountry": placeOfIssue,
+                                "IsActive": reservationData?.IsActive,
+                                "Title": reservationData?.Title,
+                                "VipCode": reservationData?.VipCode,
+                                "CloudProfileDetailID": null
+                            }
+                        ],
+                        "Alerts": reservationData?.Alerts,
+                        "IsMemberShipEnrolled": reservationData?.IsMemberShipEnrolled,
+                        "reservationDocument": reservationData?.reservationDocument,
+                        "GuestSignature": reservationData?.GuestSignature,
+                        "FolioEmail": reservationData?.FolioEmail || '',
+                        "IsBreakFastAvailable": reservationData?.IsBreakFastAvailable
+                    }
+                ],
+                "SyncFromCloud": true
+            };
 
             response = await axios.post(corsProxyUrl + apiUrl1, requestBody1, {
                 headers: {
@@ -281,7 +344,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             }
 
             await updatePassportDetails(pmsProfileId);
-            pushDocumentDetails();
+            await pushDocumentDetails();
             await handleUpdateName();
             await handleUpdateEmail();
             await handleUpdatePhone();
@@ -306,6 +369,8 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
 
     const updatePassportDetails = async (pmsProfileId) => {
         try {
+            setReservationData(fetchReservationData(reservationId));
+            await fetchReservationData();
             let guestDetails = await getGuestDetails(pmsProfileId);
 
             if (!guestDetails) {
@@ -349,7 +414,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                             operaId: emailDetails.operaId || 0,
                             primary: emailDetails.primary || true,
                             displaySequence: emailDetails.displaySequence || 1,
-                            email: email || ''
+                            // email: email || ''
                         }
                     ],
                     phones: [
@@ -359,7 +424,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                             operaId: phoneDetails.operaId || 0,
                             primary: phoneDetails.primary || true,
                             displaySequence: phoneDetails.displaySequence || 1,
-                            phoneNumber: phoneNumber || ''
+                            // phoneNumber: phoneNumber || ''
                         }
                     ],
                     dob: dateOfBirth || '',
@@ -396,7 +461,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
 
 
 
-    const handleScan = async () => {
+    const handleScan = async (scanType) => {
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcscannerapi.saavy-pay.com:8082/api/IDScan/ScanDocument';
@@ -406,30 +471,54 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                     'Content-Type': 'application/json',
                 }
             });
-
+    
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
+    
             const data = await response.json();
             if (data.Result) {
                 const scannedData = data.ScannedDocument;
-                setDocumentType(scannedData.DocumentType || '');
-                setNationality(scannedData.NationalityFullName || '');
-                setDocumentNumber(scannedData.DocumentNumber || '');
-                setDateOfBirth(scannedData.DateOfBirth ? scannedData.DateOfBirth.split('T')[0] : '');
-                setGivenName(scannedData.GivenName || '');
-                setMiddleName(scannedData.MiddleName || '');
-                setGender(scannedData.Gender || '');
-                setFamilyName(scannedData.LastName || '');
-                setIssueDate(scannedData.IssueDate ? scannedData.IssueDate.split('T')[0] : '');
-                setExpiryDate(scannedData.ExpiryDate ? scannedData.ExpiryDate.split('T')[0] : '');
-                setPlaceOfIssue(scannedData.IssuingPlace || '');
-                setDocumentImage(scannedData.DocumentImageBase64 || null);
-                setFaceImage(scannedData.FaceImageBase64 || null);
-                setEmail(scannedData.email || '');
-                setPhoneNumber(scannedData.PhoneNumber || '');
-
+    
+                if (scanType === 'front') {
+                    if (!documentImage) {
+                        setDocumentType(scannedData.DocumentType || '');
+                        setNationality(scannedData.NationalityFullName || '');
+                        setDocumentNumber(scannedData.DocumentNumber || '');
+                        setDateOfBirth(scannedData.DateOfBirth ? scannedData.DateOfBirth.split('T')[0] : '');
+                        setGivenName(scannedData.GivenName || '');
+                        setMiddleName(scannedData.MiddleName || '');
+                        setGender(scannedData.Gender || '');
+                        setFamilyName(scannedData.LastName || '');
+                        setIssueDate(scannedData.IssueDate ? scannedData.IssueDate.split('T')[0] : '');
+                        setExpiryDate(scannedData.ExpiryDate ? scannedData.ExpiryDate.split('T')[0] : '');
+                        setPlaceOfIssue(scannedData.IssuingPlace || '');
+                        setDocumentImage(scannedData.DocumentImageBase64 || null);
+                        setFaceImage(scannedData.FaceImageBase64 || null);
+                        // setEmail(scannedData.email || '');
+                        // setPhoneNumber(scannedData.PhoneNumber || '');
+                    }
+                    setBackScanButtonClicked(false);
+                } else if (scanType === 'back') {
+                    if (!documentImage2) {
+                        setDocumentType(scannedData.DocumentType || '');
+                        setNationality(scannedData.NationalityFullName || '');
+                        setDocumentNumber(scannedData.DocumentNumber || '');
+                        setDateOfBirth(scannedData.DateOfBirth ? scannedData.DateOfBirth.split('T')[0] : '');
+                        setGivenName(scannedData.GivenName || '');
+                        setMiddleName(scannedData.MiddleName || '');
+                        setGender(scannedData.Gender || '');
+                        setFamilyName(scannedData.LastName || '');
+                        setIssueDate(scannedData.IssueDate ? scannedData.IssueDate.split('T')[0] : '');
+                        setExpiryDate(scannedData.ExpiryDate ? scannedData.ExpiryDate.split('T')[0] : '');
+                        setPlaceOfIssue(scannedData.IssuingPlace || '');
+                        setDocumentImage2(scannedData.DocumentImageBase64 || null);
+                        setFaceImage(scannedData.FaceImageBase64 || null);
+                        // setEmail(scannedData.email || '');
+                        // setPhoneNumber(scannedData.PhoneNumber || '');
+                    }
+                    setBackScanButtonClicked(true);
+                }
             } else {
                 console.error("Scanning failed:", data.ErrorMessage);
             }
@@ -437,6 +526,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             console.error("Failed to scan document:", error);
         }
     };
+    
 
     const pushDocumentDetails = () => {
         const requestBody = {
@@ -491,34 +581,34 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
             },
             body: JSON.stringify(requestBody)
         })
-        .then(response => {
-            if (!response.ok) {
-                console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
-                return response.text();
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (typeof data === 'string') {
-                console.error('Error page HTML:', data);
-            } else if (data.result) {
-                const profileData = data.responseData[0];
-                setDocumentType(profileData.DocumentType || '');
-                setNationality(profileData.Nationality || '');
-                setDocumentNumber(profileData.DocumentNumber || '');
-                setIssueDate(profileData.IssueDate ? profileData.IssueDate.split('T')[0] : '');
-                setExpiryDate(profileData.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
-                setPlaceOfIssue(profileData.IssueCountry || '');
-                setDocumentImage(profileData.DocumentImage1 || null);
-                setFaceImage(profileData.FaceImage || null);
-                setGivenName(profileData.FirstName || '');
-                setMiddleName(profileData.MiddleName || '');
-                setFamilyName(profileData.LastName || '');
-            }
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+            .then(response => {
+                if (!response.ok) {
+                    console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+                    return response.text();
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (typeof data === 'string') {
+                    console.error('Error page HTML:', data);
+                } else if (data.result) {
+                    const profileData = data.responseData[0];
+                    setDocumentType(profileData?.DocumentType || '');
+                    setNationality(profileData?.Nationality || '');
+                    setDocumentNumber(profileData?.DocumentNumber || '');
+                    setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
+                    setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
+                    setPlaceOfIssue(profileData?.IssueCountry || '');
+                    setDocumentImage(profileData?.DocumentImage1 || null);
+                    setFaceImage(profileData?.FaceImage || null);
+                    setGivenName(profileData?.FirstName || '');
+                    setMiddleName(profileData?.MiddleName || '');
+                    setFamilyName(profileData?.LastName || '');
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
     };
     const handleUpdateName = async () => {
         const requestBody = {
@@ -590,11 +680,11 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                     phones: [
                         {
                             phoneType: phoneDetails.phoneType || '',
-                            phoneRole: phoneDetails.phoneRole || '',
+                            phoneRole: "PHONE",
                             operaId: phoneDetails.operaId || '',
                             primary: phoneDetails.primary || false,
                             displaySequence: phoneDetails.displaySequence || 0,
-                            phoneNumber: phoneNumber
+                            // phoneNumber: phoneNumber
                         }
                     ],
                     dob: guestDetails.BirthDate || '',
@@ -630,6 +720,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     };
 
     const handleUpdateEmail = async () => {
+        let guestDetails = getGuestDetails(pmsProfileId);
         const requestBody = {
             hotelDomain: settings.hotelDomain,
             kioskID: settings.kioskId,
@@ -650,7 +741,7 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                         operaId: reservationData?.operaId,
                         primary: reservationData?.primary,
                         displaySequence: reservationData?.displaySequence,
-                        email: email
+                        // email: email
                     }
                 ],
                 phones: null,
@@ -901,23 +992,51 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
     return (
         <div className="guest-details-container">
             <div className="guest-images">
-                {documentImage ? (
-                    <img src={`data:image/png;base64, ${documentImage}`} alt="Scanned Document" className="scanned-document-img" />
-                ) : (
-                    <>
-                        <div className="empty-placeholder">No document image available</div>
-
-                    </>
-                )}
-                <div className='user-pic'>
-                    {faceImage ? (
-                        <img src={`data:image/png;base64, ${faceImage}`} alt="Face Image" className='face-img' />
+                <div className="user-pic">
+                    {documentImage ? (
+                        <img src={`data:image/png;base64, ${documentImage}`} alt="Document Image" className="full-img" />
                     ) : (
-                        <div className="empty-placeholder">No profile picture available</div>)}
+                        <>
+                            <div className="empty-placeholder">No profile picture available</div>
+                            <button onClick={() => handleScan('front')} className='scan-button'>
+                                <i className="bi bi-upc-scan"></i>Scan
+                            </button>
+                        </>
+                    )}
+                </div>
+                <div className="user-pic">
+                    {documentImage && backScanButtonClicked ? (
+                        <img src={`data:image/png;base64, ${documentImage2}`} alt="Document Image" className="full-img" />
+                    ) : (
+                        <>
+                            <div className="empty-placeholder">No profile picture available</div>
+                            <button onClick={() => handleScan('back')} className='scan-button' >
+                                
+                                <i className="bi bi-upc-scan"></i>Scan
+                            </button>
+                        </>
+                    )}
+                </div>
+                  <div className="profile-pic">
+                    {faceImage ? (
+                        <img src={`data:image/png;base64, ${faceImage}`} alt="Face Image" className="face-img" />
+                    ) : (
+                        <>
+                            <div className="empty-placeholder">No profile picture available</div>
+                        </>
+                    )}
+                </div>
+                <div className='add-guest-button-container'>
+                    <button type="button"
+                        className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`}
+                        onClick={addGuest}>
+                        Add Guest
+                        <i className="bi bi-plus-lg"></i>
+                    </button>
                 </div>
             </div>
             <div className="guest-form">
-                <div className="document-type">
+                <div className={`document-type ${errors.documentType ? 'has-error' : ''}`}>
                     <label>Document Type</label>
                     <select value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
                         <option value="">Select Document Type</option>
@@ -925,83 +1044,97 @@ function GuestDetails({ isVisible, guestData, reservationNumber }) {
                         <option value="IDCARD">ID Card</option>
                         <option value="VISA">Visa</option>
                     </select>
+                    {errors.documentType && <div className="error">{errors.documentType}</div>}
                 </div>
-
-                <div className="document-number">
+                <div className={`document-number ${errors.documentNumber ? 'has-error' : ''}`}>
                     <label>Document Number</label>
                     <input type="text" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} />
+                    {errors.documentNumber && <div className="error">{errors.documentNumber}</div>}
                 </div>
-                <div className="nationality">
+                <div className={`nationality ${errors.nationality ? 'has-error' : ''}`}>
                     <label>Nationality</label>
                     <input type="text" value={nationality} onChange={(e) => setNationality(e.target.value)} />
+                    {errors.nationality && <div className="error">{errors.nationality}</div>}
                 </div>
-
-                <div className="date-of-birth">
+                <div className={`date-of-birth ${errors.dateOfBirth ? 'has-error' : ''}`}>
                     <label>Date of Birth</label>
                     <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+                    {errors.dateOfBirth && <div className="error">{errors.dateOfBirth}</div>}
                 </div>
-                <div className="given-name">
+                <div className="saturated">
+                    <label>Salutation</label>
+                    <input type="text" value={saturated} onChange={(e) => setSalutation(e.target.value)} />
+                </div>
+                <div className={`given-name ${errors.givenName ? 'has-error' : ''}`}>
                     <label>Given Name</label>
                     <input type="text" value={givenName} onChange={(e) => setGivenName(e.target.value)} />
+                    {errors.givenName && <div className="error">{errors.givenName}</div>}
                 </div>
                 {middleName && (
-                    <div className="middle-name">
+                    <div className={`middle-name ${errors.middleName ? 'has-error' : ''}`}>
                         <label>Middle Name</label>
                         <input type="text" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+                        {errors.middleName && <div className="error">{errors.middleName}</div>}
                     </div>
                 )}
-                <div className="gender">
+                <div className={`family-name ${errors.familyName ? 'has-error' : ''}`}>
+                    <label>Family Name</label>
+                    <input type="text" value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
+                    {errors.familyName && <div className="error">{errors.familyName}</div>}
+                </div>
+                <div className="full-name">
+                    <label>Full Name</label>
+                    <input type="text" value={fullName} readOnly />
+                </div>
+                <div className={`gender ${errors.gender ? 'has-error' : ''}`}>
                     <label>Gender</label>
                     <select value={gender} onChange={(e) => setGender(e.target.value)}>
                         <option value="">Select Gender</option>
-
                         <option value="M">Male</option>
                         <option value="F">Female</option>
                         <option value="O">Other</option>
                     </select>
+                    {errors.gender && <div className="error">{errors.gender}</div>}
                 </div>
-                <div className="family-name">
-                    <label>Family Name</label>
-                    <input type="text" value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
-                </div>
-                <div className="email">
+                {/* <div className="email">
                     <label>Email</label>
                     <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="phone-number">
                     <label>Phone Number</label>
                     <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-                </div>
-                <div className="issue-date">
+                </div> */}
+                <div className={`issue-date ${errors.issueDate ? 'has-error' : ''}`}>
                     <label>Issue Date</label>
                     <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
+                    {errors.issueDate && <div className="error">{errors.issueDate}</div>}
                 </div>
-                <div className="expiry-date">
+                <div className={`expiry-date ${errors.expiryDate ? 'has-error' : ''}`}>
                     <label>Expiry Date</label>
                     <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+                    {errors.expiryDate && <div className="error">{errors.expiryDate}</div>}
                 </div>
                 <div className="place-of-issue">
                     <label>Place of Issue</label>
                     <input type="text" value={placeOfIssue} onChange={(e) => setPlaceOfIssue(e.target.value)} />
                 </div>
             </div>
-
             <div className="form-buttons">
                 <button onClick={handleSave}>
                     <i className="bi bi-floppy"></i>Save
                 </button>
-                <button>
+                {/* <button>
                     <i className="bi bi-file-plus"></i>Add Page
-                </button>
-                <button onClick={handleScan}>
-                    <i className="bi bi-upc-scan"></i>Scan
-                </button>
+                </button> */}
+
                 <button onClick={handleCancel}>
                     <i className="bi bi-x-square"></i>Cancel
                 </button>
             </div>
         </div>
     );
+
 }
+
 
 export default GuestDetails;
