@@ -6,6 +6,7 @@ import './Home.css';
 import GuestDetails from '../GuestDetails/GuestDetails';
 import settings from '../../app.settings';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import axios from 'axios';
 
 const fetchReservationData = async (reservationId) => {
     try {
@@ -41,6 +42,66 @@ const fetchReservationData = async (reservationId) => {
     } catch (error) {
         console.error("Failed to fetch reservation data:", error);
         return null;
+    }
+};
+
+const handlePushReservation = async (reservationData, roomNumber, adults) => {
+    const reservationNumberState = reservationData?.ReservationNumber ?? '';
+    const pmsProfileId = reservationData?.GuestProfiles[0]?.PmsProfileID ?? '';
+    const familyName = reservationData?.GuestProfiles[0]?.FamilyName ?? '';
+    const givenName = reservationData?.GuestProfiles[0]?.GivenName ?? '';
+    const nationality = reservationData?.GuestProfiles[0]?.Nationality ?? '';
+    const gender = reservationData?.GuestProfiles[0]?.Gender ?? '';
+    const documentNumber = reservationData?.GuestProfiles[0]?.PassportNumber ?? '';
+    const documentType = reservationData?.GuestProfiles[0]?.DocumentType ?? '';
+    const guestDetails = reservationData?.GuestProfiles[0] ?? {};
+
+    const requestBody1 = {
+        "RequestObject": [
+            {
+                ...reservationData,
+                "ReservationNumber": reservationNumberState,
+                "Adults": adults,
+                "RoomDetails": {
+                    ...reservationData.RoomDetails,
+                    "RoomNumber": roomNumber || '0',
+                },
+                "GuestProfiles": [
+                    {
+                        "PmsProfileID": pmsProfileId,
+                        "FamilyName": familyName,
+                        "GivenName": givenName,
+                        "GuestName": `${givenName} ${familyName}`,
+                        "Nationality": nationality,
+                        "Gender": gender,
+                        "PassportNumber": documentNumber,
+                        "DocumentType": documentType,
+                        ...guestDetails
+                    }
+                ]
+            }
+        ],
+        "SyncFromCloud": true
+    };
+
+    try {
+        const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+        const apiUrl1 = 'http://qcapi.saavy-pay.com:8082/api/local/PushReservationDetails';
+
+        const response = await axios.post(corsProxyUrl + apiUrl1, requestBody1, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.status !== 200) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.data;
+        console.log("Push reservation successful:", data);
+    } catch (error) {
+        console.error("Failed to push reservation:", error);
     }
 };
 
@@ -135,7 +196,7 @@ function Home() {
     const [isButtonClicked, setIsButtonClicked] = useState(false);
     const [isEditingRoomNumber, setIsEditingRoomNumber] = useState(false);
     const [isEditingAdults, setIsEditingAdults] = useState(false);
-    const [editableRoomNumber, setEditableRoomNumber] = useState('');
+    const [editableRoomNumber, setEditableRoomNumber] = useState('0');
     const [editableAdults, setEditableAdults] = useState('');
 
     const roomNumberRef = useRef(null);
@@ -148,7 +209,7 @@ function Home() {
                     setReservationData(data.responseData[0]);
                     const guestProfiles = data.responseData[0].GuestProfiles || [];
                     setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
-                    setEditableRoomNumber(data.responseData[0].RoomDetails.RoomNumber);
+                    setEditableRoomNumber(data.responseData[0].RoomDetails.RoomNumber || '0');
                     setEditableAdults(data.responseData[0].Adults);
                 }
             });
@@ -190,12 +251,22 @@ function Home() {
         }
     };
 
-    const handleKeyPress = (event, type) => {
+    const handleKeyPress = async (event, type) => {
         if (event.key === 'Enter') {
             if (type === 'roomNumber') {
-                setIsEditingRoomNumber(false);
+                if (/^\d{5}$/.test(editableRoomNumber)) {
+                    await handlePushReservation(reservationData, editableRoomNumber, editableAdults);
+                    setIsEditingRoomNumber(false);
+                } else {
+                    alert("Room number should be a 5-digit number");
+                }
             } else if (type === 'adults') {
-                setIsEditingAdults(false);
+                if (!isNaN(editableAdults) && editableAdults > 0) {
+                    await handlePushReservation(reservationData, editableRoomNumber, editableAdults);
+                    setIsEditingAdults(false);
+                } else {
+                    alert("Adult count should be a positive number");
+                }
             }
         }
     };

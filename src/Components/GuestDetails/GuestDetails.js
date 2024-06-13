@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Alert from '@mui/material/Alert';
+
 import './GuestDetails.css';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -88,6 +90,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             });
         }
     }, [reservationId]);
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+
 
     useEffect(() => {
         if (guestData) {
@@ -371,6 +375,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             if (response.data && response.data.result) {
                 const responseData = response.data.responseData;
                 console.log('Response Data:', responseData);
+                setShowSuccessAlert(true);
+                setTimeout(() => setShowSuccessAlert(false), 3000);
             } else {
                 console.error('Save failed:', response.data);
             }
@@ -907,159 +913,15 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             console.error('Failed to update address list:', error);
         }
     };
-    //     const requestBody = {
-    //         "RequestObject": [
-    //             {
-    //                 "ConfirmationNumber": null,
-    //                 "ReservationNumber": "308151",
-    //                 "ReservationNameID": "302151",
-    //                 "ArrivalDate": "2008-05-16T00:00:00",
-    //                 "DepartureDate": "2008-05-17T00:00:00",
-    //                 "CreatedDateTime": null,
-    //                 "Adults": 1,
-    //                 "Child": 0,
-    //                 "ReservationStatus": "RESERVED",
-    //                 "ComputedReservationStatus": null,
-    //                 "LegNumber": null,
-    //                 "ChainCode": null,
-    //                 "ExpectedDepartureTime": null,
-    //                 "ExpectedArrivalTime": "1900-01-01T04:44:00",
-    //                 "ReservationSourceCode": null,
-    //                 "ReservationType": "NON",
-    //                 "PrintRate": null,
-    //                 "NoPost": null,
-    //                 "DoNotMoveRoom": null,
-    //                 "TotalAmount": 100.0,
-    //                 "TotalTax": null,
-    //                 "IsTaxInclusive": false,
-    //                 "CurrentBalance": 0.0,
-    //                 "RoomDetails": {
-    //                     "RoomNumber": null,
-    //                     "RoomType": "SKI",
-    //                     "RoomTypeDescription": "Standard King",
-    //                     "RoomTypeShortDescription": null,
-    //                     "RoomStatus": null,
-    //                     "RTC": null,
-    //                     "RTCDescription": null,
-    //                     "RTCShortDescription": null
-    //                 },
-    //                 "RateDetails": {
-    //                     "RateCode": null,
-    //                     "RateAmount": null,
-    //                     "DailyRates": null,
-    //                     "IsMultipleRate": false
-    //                 },
-    //                 "PartyCode": null,
-    //                 "PaymentMethod": null,
-    //                 "IsPrimary": null,
-    //                 "ETA": null,
-    //                 "FlightNo": null,
-    //                 "IsCardDetailPresent": false,
-    //                 "IsDepositAvailable": false,
-    //                 "IsPreCheckedInPMS": null,
-    //                 "IsSaavyPaid": null,
-    //                 "SharerReservations": null,
-    //                 "DepositDetail": null,
-    //                 "PreferanceDetails": null,
-    //                 "PackageDetails": null,
-    //                 "userDefinedFields": null,
-    //                 "GuestProfiles": [
-    //                     {
-    //                         "PmsProfileID": "194711",
-    //                         "FamilyName": familyName,
-    //                         "GivenName": givenName,
-    //                         "GuestName": null,
-    //                         "Nationality": nationality,
-    //                         "Gender": gender,
-    //                         "PassportNumber": documentNumber,
-    //                         "DocumentType": documentType,
-    //                         "IsPrimary": false,
-    //                         "MembershipType": null,
-    //                         "MembershipNumber": null,
-    //                         "MembershipID": null,
-    //                         "MembershipName": null,
-    //                         "MembershipClass": null,
-    //                         "MembershipLevel": null,
-    //                         "FirstName": givenName,
-    //                         "MiddleName": middleName,
-    //                         "LastName": familyName,
-    //                         "Phones": [
-    //                             {
-    //                                 "phoneType": "PHONE",
-    //                                 "phoneRole": null,
-    //                                 "operaId": 0,
-    //                                 "primary": true,
-    //                                 "displaySequence": 1,
-    //                                 "PhoneNumber": null
-    //                             }
-    //                         ],
-    //                         "Address": [
-    //                             {
-    //                                 "addressType": null,
-    //                                 "operaId": 0,
-    //                                 "primary": null,
-    //                                 "displaySequence": null,
-    //                                 "address1": "sfsfdfd",
-    //                                 "address2": null,
-    //                                 "city": "sdfdsfdsf",
-    //                                 "state": null,
-    //                                 "country": "IN",
-    //                                 "zip": "324324"
-    //                             }
-    //                         ],
-    //                         "Email": [
-    //                             {
-    //                                 "emailType": "EMAIL",
-    //                                 "operaId": 0,
-    //                                 "primary": true,
-    //                                 "displaySequence": 1,
-    //                                 "email": null
-    //                             }
-    //                         ],
-    //                         "BirthDate": dateOfBirth,
-    //                         "IssueDate": issueDate,
-    //                         "IssueCountry": null,
-    //                         "IsActive": false,
-    //                         "Title": null,
-    //                         "VipCode": null,
-    //                         "CloudProfileDetailID": "2"
-    //                     }
-    //                 ],
-    //                 "Alerts": null,
-    //                 "IsMemberShipEnrolled": false,
-    //                 "reservationDocument": null,
-    //                 "GuestSignature": "yHJtimDlwsXGEIBAkwQQrCbp0zYEIJCLAIKVCxcbQwACTRJAsJqkT9sQgEAuAv8BAAaMZi1o7bwAAAAASUVORK5CYII=",
-    //                 "FolioEmail": null,
-    //                 "IsBreakFastAvailable": null
-    //             }
-    //         ],
-    //         "SyncFromCloud": true
-    //     };
-
-    //     try {
-    //         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-    //         const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/PushReservationDetails';
-
-    //         const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
-    //             headers: {
-    //                 'Content-Type': 'application/json'
-    //             }
-    //         });
-    //         console.log('Update reservation details successful:', response.data);
-    //     } catch (error) {
-    //         if (error.response) {
-    //             console.error('Server responded with non-2xx status:', error.response.data);
-    //         } else if (error.request) {
-    //             console.error('No response received:', error.request);
-    //         } else {
-    //             console.error('Error setting up the request:', error.message);
-    //         }
-    //         console.error('Failed to update reservation details:', error);
-    //     }
-    // };
+  
 
     return (
         <div className="guest-details-container">
+            {showSuccessAlert && (
+                <Alert variant="filled" severity="success" onClose={() => setShowSuccessAlert(false)}>
+                    A new Guest added Successfully.
+                </Alert>
+            )}
             <div className="guest-images">
                 <div className="user-pic">
                     {documentImage ? (
@@ -1079,8 +941,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     ) : (
                         <>
                             <div className="empty-placeholder">No profile picture available</div>
-                            <button onClick={() => handleScan('back')} className='scan-button' >
-
+                            <button onClick={() => handleScan('back')} className='scan-button'>
                                 <i className="bi bi-upc-scan"></i>Scan
                             </button>
                         </>
@@ -1096,9 +957,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     )}
                 </div>
                 <div className='add-guest-button-container'>
-                    <button type="button"
-                        className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`}
-                        onClick={addGuest}>
+                    <button type="button" className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`} onClick={addGuest}>
                         Add Guest
                         <i className="bi bi-plus-lg"></i>
                     </button>
@@ -1132,8 +991,6 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     </select>
                     {errors.nationality && <div className="error">{errors.nationality}</div>}
                 </div>
-
-
                 <div className={`date-of-birth ${errors.dateOfBirth ? 'has-error' : ''}`}>
                     <label>Date of Birth</label>
                     <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
@@ -1174,14 +1031,6 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     </select>
                     {errors.gender && <div className="error">{errors.gender}</div>}
                 </div>
-                {/* <div className="email">
-                    <label>Email</label>
-                    <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="phone-number">
-                    <label>Phone Number</label>
-                    <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-                </div> */}
                 <div className={`issue-date ${errors.issueDate ? 'has-error' : ''}`}>
                     <label>Issue Date</label>
                     <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
@@ -1201,10 +1050,6 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 <button onClick={handleSave}>
                     <i className="bi bi-floppy"></i>Save
                 </button>
-                {/* <button>
-                    <i className="bi bi-file-plus"></i>Add Page
-                </button> */}
-
                 <button onClick={handleCancel}>
                     <i className="bi bi-x-square"></i>Cancel
                 </button>
