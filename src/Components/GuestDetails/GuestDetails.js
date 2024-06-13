@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import settings from '../../app.settings.js';
 
+
 const fetchReservationData = async (reservationId) => {
     try {
         const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation', {
@@ -60,6 +61,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     const [faceImage, setFaceImage] = useState(null);
     const [pmsProfileId, setPmsProfileId] = useState('');
     const [documentImage2, setDocumentImage2] = useState('');
+    const [nationalityList, setNationalityList] = useState([]);
+    const [nationalityMapping, setNationalityMapping] = useState({});
+
+
+
     // const [phoneNumber, setPhoneNumber] = useState('');
     // const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
@@ -115,6 +121,28 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             fetchProfileDocuments(guestData.PmsProfileID, reservationData.ReservationNameID);
         }
     }, [reservationData, guestData]);
+
+    useEffect(() => {
+        fetchNationalityList().then(data => {
+            setNationalityList(data);
+            const mapping = {};
+            data.forEach(country => {
+                mapping[country.CountryCode] = country.CountryName;
+            });
+            setNationalityMapping(mapping);
+        }).catch(error => {
+            console.error('Failed to fetch nationality list:', error);
+        });
+    }, []);
+
+
+
+
+
+
+    nationalityList.forEach(country => {
+        nationalityMapping[country.CountryName] = country.CountryCode;
+    });
 
     const fullName = `${givenName} ${middleName ? middleName + ' ' : ''}${familyName}`;
 
@@ -223,13 +251,17 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 console.log('create new accompany api save successful:', response2.data);
 
             }
-
+            var guestDetails;
+            var newPmsProfileId;
             if (response2.data && response2.data.result) {
                 const responseData = response2.data?.responseData;
-                setPmsProfileId(responseData.PmsProfileID);
+                newPmsProfileId = responseData.PmsProfileID;
+                setPmsProfileId(newPmsProfileId);
                 console.log('Response Data:', responseData);
+                guestDetails = await getGuestDetails(newPmsProfileId);
+            } else {
+                console.error('Failed to get PmsProfileID from response');
             }
-            var guestDetails = await getGuestDetails(pmsProfileId);
 
             const requestBody1 = {
                 "RequestObject": [
@@ -343,11 +375,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 console.error('Save failed:', response.data);
             }
 
-            await updatePassportDetails(pmsProfileId);
-            await pushDocumentDetails();
+            await updatePassportDetails(newPmsProfileId);
+            pushDocumentDetails();
             await handleUpdateName();
-            await handleUpdateEmail();
-            await handleUpdatePhone();
+            // await handleUpdateEmail();
+            // await handleUpdatePhone();
             // await handleUpdateAddress();
 
 
@@ -460,7 +492,6 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     };
 
 
-
     const handleScan = async (scanType) => {
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
@@ -471,19 +502,20 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     'Content-Type': 'application/json',
                 }
             });
-    
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-    
+
             const data = await response.json();
             if (data.Result) {
                 const scannedData = data.ScannedDocument;
-    
+                const nationalityCode = nationalityMapping[scannedData.NationalityFullName] || '';
+
                 if (scanType === 'front') {
                     if (!documentImage) {
                         setDocumentType(scannedData.DocumentType || '');
-                        setNationality(scannedData.NationalityFullName || '');
+                        setNationality(nationalityCode);
                         setDocumentNumber(scannedData.DocumentNumber || '');
                         setDateOfBirth(scannedData.DateOfBirth ? scannedData.DateOfBirth.split('T')[0] : '');
                         setGivenName(scannedData.GivenName || '');
@@ -495,14 +527,12 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         setPlaceOfIssue(scannedData.IssuingPlace || '');
                         setDocumentImage(scannedData.DocumentImageBase64 || null);
                         setFaceImage(scannedData.FaceImageBase64 || null);
-                        // setEmail(scannedData.email || '');
-                        // setPhoneNumber(scannedData.PhoneNumber || '');
                     }
                     setBackScanButtonClicked(false);
                 } else if (scanType === 'back') {
                     if (!documentImage2) {
                         setDocumentType(scannedData.DocumentType || '');
-                        setNationality(scannedData.NationalityFullName || '');
+                        setNationality(nationalityCode);
                         setDocumentNumber(scannedData.DocumentNumber || '');
                         setDateOfBirth(scannedData.DateOfBirth ? scannedData.DateOfBirth.split('T')[0] : '');
                         setGivenName(scannedData.GivenName || '');
@@ -514,8 +544,6 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         setPlaceOfIssue(scannedData.IssuingPlace || '');
                         setDocumentImage2(scannedData.DocumentImageBase64 || null);
                         setFaceImage(scannedData.FaceImageBase64 || null);
-                        // setEmail(scannedData.email || '');
-                        // setPhoneNumber(scannedData.PhoneNumber || '');
                     }
                     setBackScanButtonClicked(true);
                 }
@@ -526,7 +554,9 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             console.error("Failed to scan document:", error);
         }
     };
-    
+
+
+
 
     const pushDocumentDetails = () => {
         const requestBody = {
@@ -565,6 +595,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             });
     };
 
+
+
     const fetchProfileDocuments = (pmsProfileId, reservationNameID) => {
         const requestBody = {
             RequestObject: {
@@ -594,7 +626,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 } else if (data.result) {
                     const profileData = data.responseData[0];
                     setDocumentType(profileData?.DocumentType || '');
-                    setNationality(profileData?.Nationality || '');
+                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || ''); // Use nationality mapping
                     setDocumentNumber(profileData?.DocumentNumber || '');
                     setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
                     setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
@@ -610,6 +642,43 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 console.error('Error:', error);
             });
     };
+
+
+    const fetchNationalityList = async () => {
+        try {
+            const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GetNationalityList', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    hotelDomain: settings.hotelDomain,
+                    kioskID: settings.kioskId,
+                    username: settings.username,
+                    password: settings.password,
+                    systemType: settings.systemType,
+                    language: settings.language,
+                    legNumber: null,
+                    chainCode: settings.chainCode,
+                    destinationEntityID: settings.destinationEntityID,
+                    destinationSystemType: settings.destinationSystemType,
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.responseData;
+        } catch (error) {
+            console.error("Failed to fetch nationality list:", error);
+            return [];
+        }
+    };
+
+
+
     const handleUpdateName = async () => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
@@ -1011,13 +1080,13 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         <>
                             <div className="empty-placeholder">No profile picture available</div>
                             <button onClick={() => handleScan('back')} className='scan-button' >
-                                
+
                                 <i className="bi bi-upc-scan"></i>Scan
                             </button>
                         </>
                     )}
                 </div>
-                  <div className="profile-pic">
+                <div className="profile-pic">
                     {faceImage ? (
                         <img src={`data:image/png;base64, ${faceImage}`} alt="Face Image" className="face-img" />
                     ) : (
@@ -1053,9 +1122,18 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 </div>
                 <div className={`nationality ${errors.nationality ? 'has-error' : ''}`}>
                     <label>Nationality</label>
-                    <input type="text" value={nationality} onChange={(e) => setNationality(e.target.value)} />
+                    <select value={nationality} onChange={(e) => setNationality(e.target.value)}>
+                        <option value="">Select Nationality</option>
+                        {nationalityList.map(country => (
+                            <option key={country.CountryCode} value={country.CountryCode}>
+                                {country.CountryName}
+                            </option>
+                        ))}
+                    </select>
                     {errors.nationality && <div className="error">{errors.nationality}</div>}
                 </div>
+
+
                 <div className={`date-of-birth ${errors.dateOfBirth ? 'has-error' : ''}`}>
                     <label>Date of Birth</label>
                     <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
