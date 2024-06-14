@@ -44,6 +44,34 @@ const fetchReservationData = async (reservationId) => {
         return null;
     }
 };
+const fetchReservationDataByRefNumber = async (refNumber) => {
+    try {
+        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                "RequestObject": {
+                    "ReferenceNumber": refNumber,
+                    "ArrivalDate": null
+                },
+                "SyncFromCloud": null
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Fetched reservation data by reference number:", data);
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch reservation data by reference number:", error);
+        return null;
+    }
+};
 
 const handlePushReservation = async (reservationData, roomNumber, adults) => {
     const reservationNumberState = reservationData?.ReservationNumber ?? '';
@@ -201,6 +229,17 @@ function Home() {
 
     const roomNumberRef = useRef(null);
     const adultsRef = useRef(null);
+
+    const refreshReservationData = async (refNumber) => {
+        const data = await fetchReservationDataByRefNumber(refNumber);
+        if (data) {
+            setReservationData(data.responseData[0]);
+            // const guestProfiles = data.responseData[0].GuestProfiles || [];
+            // setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
+            setEditableRoomNumber(data.responseData[0]?.RoomNumber || '0');
+            setEditableAdults(data.responseData[0]?.Adultcount || '0');
+        }
+    };
 
     useEffect(() => {
         if (reservationId) {
@@ -385,6 +424,7 @@ function Home() {
                                         reservationNumber={reservationData.ReservationNumber}
                                         addGuest={addGuest}
                                         isButtonClicked={isButtonClicked}
+                                        onSave={() => refreshReservationData(reservationData?.ReservationNumber)}
                                     />
                                 )}
                             </div>

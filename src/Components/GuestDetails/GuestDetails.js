@@ -44,7 +44,7 @@ const fetchReservationData = async (reservationId) => {
     }
 };
 
-export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest, isButtonClicked }) {
+export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest, isButtonClicked,onSave }) {
     const { reservationId } = useParams();
 
     const [saturated, setSalutation] = useState('');
@@ -247,7 +247,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
             if (!pmsProfileId) {
 
-                response2 = await axios.post(corsProxyUrl + apiUrl2, requestBody2, {
+                response2 = await axios.post( corsProxyUrl + apiUrl2, requestBody2, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
@@ -262,9 +262,21 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 newPmsProfileId = responseData.PmsProfileID;
                 setPmsProfileId(newPmsProfileId);
                 console.log('Response Data:', responseData);
+
+            } 
+            else{
+                newPmsProfileId = guestData.PmsProfileID;
+                setPmsProfileId(guestData.PmsProfileID);
+            }
+            // else {
+            //     console.error('Failed to get PmsProfileID from response');
+            // }
+            if (newPmsProfileId && newPmsProfileId != null) {
                 guestDetails = await getGuestDetails(newPmsProfileId);
-            } else {
-                console.error('Failed to get PmsProfileID from response');
+            }
+            else {
+                guestDetails = await getGuestDetails(pmsProfileId);
+
             }
 
             const requestBody1 = {
@@ -276,7 +288,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         "ArrivalDate": reservationData?.ArrivalDate,
                         "DepartureDate": reservationData?.DepartureDate,
                         "CreatedDateTime": reservationData?.CreatedDateTime,
-                        "Adults": reservationData?.Adult,
+                        "Adults": reservationData?.Adults,
                         "Child": reservationData?.Child,
                         "ReservationStatus": reservationData?.ReservationStatus,
                         "ComputedReservationStatus": reservationData?.ComputedReservationStatus,
@@ -325,7 +337,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         "userDefinedFields": reservationData?.userDefinedFields,
                         "GuestProfiles": [
                             {
-                                "PmsProfileID": pmsProfileId,
+                                "PmsProfileID": guestDetails.PmsProfileID,
                                 "FamilyName": familyName,
                                 "GivenName": givenName,
                                 "GuestName": `${givenName} ${familyName}`,
@@ -366,7 +378,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 "SyncFromCloud": true
             };
 
-            response = await axios.post(corsProxyUrl + apiUrl1, requestBody1, {
+            response = await axios.post( apiUrl1, requestBody1, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -381,9 +393,10 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 console.error('Save failed:', response.data);
             }
 
-            await updatePassportDetails(newPmsProfileId);
-            pushDocumentDetails();
-            await handleUpdateName();
+            await updatePassportDetails(guestDetails);
+            pushDocumentDetails(guestDetails);
+            await handleUpdateName(guestDetails);
+            onSave();
             // await handleUpdateEmail();
             // await handleUpdatePhone();
             // await handleUpdateAddress();
@@ -405,11 +418,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         console.log('Cancel editing guest details...');
     };
 
-    const updatePassportDetails = async (pmsProfileId) => {
+    const updatePassportDetails = async (guestDetails) => {
         try {
-            setReservationData(fetchReservationData(reservationId));
-            await fetchReservationData();
-            let guestDetails = await getGuestDetails(pmsProfileId);
 
             if (!guestDetails) {
                 throw new Error('Guest details not found');
@@ -445,7 +455,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                             zip: addressDetails.zip || ''
                         }
                     ],
-                    profileID: pmsProfileId,
+                    profileID: guestDetails.PmsProfileID,
                     emails: [
                         {
                             emailType: emailDetails.emailType || '',
@@ -564,12 +574,12 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
 
 
-    const pushDocumentDetails = () => {
+    const pushDocumentDetails = (guestDetails) => {
         const requestBody = {
             RequestObject: [
                 {
                     ReservationNameID: reservationData.ReservationNameID,
-                    ProfileID: pmsProfileId,
+                    ProfileID: guestDetails.PmsProfileID,
                     DocumentNumber: documentNumber,
                     ExpiryDate: expiryDate,
                     IssueDate: issueDate,
@@ -584,7 +594,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             ],
             SyncFromCloud: null
         };
-
+    
         fetch('http://qcapi.saavy-pay.com:8082/api/local/PushDocumentDetails', {
             method: 'POST',
             headers: {
@@ -592,14 +602,15 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             },
             body: JSON.stringify(requestBody)
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
     };
+    
 
 
 
@@ -611,8 +622,10 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             },
             SyncFromCloud: null
         };
+        const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+       const apiUrl ='http://qcapi.saavy-pay.com:8082/api/local/FetchProfileDocumentImageByProfileID';
 
-        fetch('http://qcapi.saavy-pay.com:8082/api/local/FetchProfileDocumentImageByProfileID', {
+        fetch(corsProxyUrl + apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -632,7 +645,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 } else if (data.result) {
                     const profileData = data.responseData[0];
                     setDocumentType(profileData?.DocumentType || '');
-                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || ''); // Use nationality mapping
+                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || ''); 
                     setDocumentNumber(profileData?.DocumentNumber || '');
                     setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
                     setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
@@ -685,7 +698,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
 
 
-    const handleUpdateName = async () => {
+    const handleUpdateName = async (guestDetails) => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
             kioskID: settings.kioskId,
@@ -698,7 +711,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             destinationEntityID: settings.destinationEntityID,
             destinationSystemType: settings.destinationSystemType,
             UpdateProileRequest: {
-                profileID: pmsProfileId,
+                profileID: guestDetails.PmsProfileID,
                 GivenName: givenName,
                 MiddleName: middleName,
                 FamilyName: familyName
@@ -913,7 +926,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             console.error('Failed to update address list:', error);
         }
     };
-  
+
 
     return (
         <div className="guest-details-container">
@@ -927,33 +940,27 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     {documentImage ? (
                         <img src={`data:image/png;base64, ${documentImage}`} alt="Document Image" className="full-img" />
                     ) : (
-                        <>
-                            <div className="empty-placeholder">No profile picture available</div>
-                            <button onClick={() => handleScan('front')} className='scan-button'>
-                                <i className="bi bi-upc-scan"></i>Scan
-                            </button>
-                        </>
+                        <div className="empty-placeholder">No profile picture available</div>
                     )}
+                    <button onClick={() => handleScan('front')} className='scan-button'>
+                        <i className="bi bi-upc-scan"></i>Scan
+                    </button>
                 </div>
                 <div className="user-pic">
                     {documentImage && backScanButtonClicked ? (
                         <img src={`data:image/png;base64, ${documentImage2}`} alt="Document Image" className="full-img" />
                     ) : (
-                        <>
-                            <div className="empty-placeholder">No profile picture available</div>
-                            <button onClick={() => handleScan('back')} className='scan-button'>
-                                <i className="bi bi-upc-scan"></i>Scan
-                            </button>
-                        </>
+                        <div className="empty-placeholder">No profile picture available</div>
                     )}
+                    <button onClick={() => handleScan('back')} className='scan-button'>
+                        <i className="bi bi-upc-scan"></i>Scan
+                    </button>
                 </div>
                 <div className="profile-pic">
                     {faceImage ? (
                         <img src={`data:image/png;base64, ${faceImage}`} alt="Face Image" className="face-img" />
                     ) : (
-                        <>
-                            <div className="empty-placeholder">No profile picture available</div>
-                        </>
+                        <div className="empty-placeholder">No profile picture available</div>
                     )}
                 </div>
                 <div className='add-guest-button-container'>
@@ -963,6 +970,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     </button>
                 </div>
             </div>
+
             <div className="guest-form">
                 <div className={`document-type ${errors.documentType ? 'has-error' : ''}`}>
                     <label>Document Type</label>
