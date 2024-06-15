@@ -44,7 +44,7 @@ const fetchReservationData = async (reservationId) => {
     }
 };
 
-export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest, isButtonClicked,onSave }) {
+export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest, isButtonClicked, onSave }) {
     const { reservationId } = useParams();
 
     const [saturated, setSalutation] = useState('');
@@ -247,7 +247,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
             if (!pmsProfileId) {
 
-                response2 = await axios.post( corsProxyUrl + apiUrl2, requestBody2, {
+                response2 = await axios.post(corsProxyUrl + apiUrl2, requestBody2, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
@@ -263,8 +263,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 setPmsProfileId(newPmsProfileId);
                 console.log('Response Data:', responseData);
 
-            } 
-            else{
+            }
+            else {
                 newPmsProfileId = guestData.PmsProfileID;
                 setPmsProfileId(guestData.PmsProfileID);
             }
@@ -378,7 +378,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 "SyncFromCloud": true
             };
 
-            response = await axios.post( apiUrl1, requestBody1, {
+            response = await axios.post(apiUrl1, requestBody1, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -594,7 +594,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             ],
             SyncFromCloud: null
         };
-    
+
         fetch('http://qcapi.saavy-pay.com:8082/api/local/PushDocumentDetails', {
             method: 'POST',
             headers: {
@@ -602,15 +602,15 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             },
             body: JSON.stringify(requestBody)
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Success:', data);
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
     };
-    
+
 
 
 
@@ -623,7 +623,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             SyncFromCloud: null
         };
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-       const apiUrl ='http://qcapi.saavy-pay.com:8082/api/local/FetchProfileDocumentImageByProfileID';
+        const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchProfileDocumentImageByProfileID';
 
         fetch(corsProxyUrl + apiUrl, {
             method: 'POST',
@@ -645,7 +645,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 } else if (data.result) {
                     const profileData = data.responseData[0];
                     setDocumentType(profileData?.DocumentType || '');
-                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || ''); 
+                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || '');
                     setDocumentNumber(profileData?.DocumentNumber || '');
                     setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
                     setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
@@ -927,6 +927,78 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         }
     };
 
+    const handleCheckIn = async (reservationNameID) => {
+        try {
+            const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckIn', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    hotelDomain: settings.hotelDomain,
+                    kioskID: settings.kioskId,
+                    username: settings.username,
+                    password: settings.password,
+                    systemType: settings.systemType,
+                    language: settings.language,
+                    legNumber: settings.legNumber,
+                    chainCode: settings.chainCode,
+                    destinationEntityID: settings.destinationEntityID,
+                    destinationSystemType: settings.destinationSystemType,
+                    SendFolio: settings.SendFolio,
+                    OperaReservation: {
+                        ReservationNameID: reservationNameID
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Check-in successful:", data);
+        } catch (error) {
+            console.error("Failed to check in:", error);
+        }
+    };
+
+    const handleCheckOut = async (reservationNameID) => {
+        try {
+            const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckOut', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    hotelDomain: "EU",
+                    kioskID: "KIOSK",
+                    username: "SUPERVISOR",
+                    password: "PEGASUS2021",
+                    systemType: "KIOSK",
+                    language: "EN",
+                    legNumber: null,
+                    chainCode: "CHA",
+                    destinationEntityID: "TI",
+                    destinationSystemType: "PMS",
+                    SendFolio: false,
+                    OperaReservation: {
+                        ReservationNameID: reservationNameID
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Check-out successful:", data);
+        } catch (error) {
+            console.error("Failed to check out:", error);
+        }
+    };
+
 
     return (
         <div className="guest-details-container">
@@ -964,11 +1036,24 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     )}
                 </div>
                 <div className='add-guest-button-container'>
+                    {reservationData.ReservationStatus === 'RESERVED' && (
+                        <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckIn(reservationData.ReservationNameID)}>
+                            Check In
+                            <i className="bi bi-check-square"></i>
+                        </button>
+                    )}
+                    {reservationData.ReservationStatus === 'CHECK-IN' && (
+                        <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckOut(reservationData.ReservationNameID)}>
+                            Check Out
+                            <i className="bi bi-x-square"></i>
+                        </button>
+                    )}
                     <button type="button" className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`} onClick={addGuest}>
                         Add Guest
                         <i className="bi bi-plus-lg"></i>
                     </button>
                 </div>
+
             </div>
 
             <div className="guest-form">

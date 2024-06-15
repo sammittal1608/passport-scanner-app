@@ -396,7 +396,7 @@ function Home() {
                             <div>{reservationData.Child !== undefined ? reservationData.Child : ''}</div>
                         </div>
                     </div>
-                    <div className='check-in-out-container'>
+                    {/* <div className='check-in-out-container'>
                         {reservationData.ReservationStatus === 'RESERVED' && (
                             <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckIn(reservationData.ReservationNameID)}>
                                 Check In
@@ -409,7 +409,7 @@ function Home() {
                                 <i className="bi bi-x-square"></i>
                             </button>
                         )}
-                    </div>
+                    </div> */}
                     <div className="guest-details">
                         {guests.map((guest, index) => (
                             <div className="guest" key={index}>
