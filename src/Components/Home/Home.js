@@ -239,7 +239,7 @@ function Home() {
             const reservation = data.responseData[0];
             setReservationData(reservation);
             console.log("Setting room number:", reservation.RoomNumber);
-            setEditableRoomNumber(reservation.RoomNumber ?? '');
+            setEditableRoomNumber(reservation.RoomNumber ?? '0');
             console.log("Setting adult count:", reservation.Adultcount);
             setEditableAdults(reservation.Adultcount ?? '0');
         } else {
