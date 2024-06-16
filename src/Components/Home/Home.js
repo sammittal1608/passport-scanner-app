@@ -235,12 +235,15 @@ function Home() {
 
     const refreshReservationData = async (refNumber) => {
         const data = await fetchReservationDataByRefNumber(refNumber);
-        if (data) {
-           // setReservationData(data.responseData[0]);
-            // const guestProfiles = data.responseData[0].GuestProfiles || [];
-            // setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
-            setEditableRoomNumber(data.responseData[0]?.RoomNumber || '0');
-            setEditableAdults(data.responseData[0]?.Adultcount || '0');
+        if (data && data.responseData && data.responseData.length > 0) {
+            const reservation = data.responseData[0];
+            setReservationData(reservation);
+            console.log("Setting room number:", reservation.RoomNumber);
+            setEditableRoomNumber(reservation.RoomNumber ?? '0');
+            console.log("Setting adult count:", reservation.Adultcount);
+            setEditableAdults(reservation.Adultcount ?? '0');
+        } else {
+            console.error("Invalid data structure:", data);
         }
     };
 

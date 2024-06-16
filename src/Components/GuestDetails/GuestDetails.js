@@ -68,6 +68,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     const [documentImage2, setDocumentImage2] = useState('');
     const [nationalityList, setNationalityList] = useState([]);
     const [nationalityMapping, setNationalityMapping] = useState({});
+    const [areButtonsVisible, setAreButtonsVisible] = useState(false);
 
 
 
@@ -126,6 +127,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     useEffect(() => {
         if (reservationData && guestData && guestData.PmsProfileID) {
             fetchProfileDocuments(guestData.PmsProfileID, reservationData.ReservationNameID);
+            setDateOfBirth(guestData?.BirthDate);
+            setGender(guestData?.gender);
         }
     }, [reservationData, guestData]);
 
@@ -250,7 +253,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
             if (!pmsProfileId) {
 
-                response2 = await axios.post( apiUrl2, requestBody2, {
+                response2 = await axios.post(apiUrl2, requestBody2, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
@@ -399,9 +402,6 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             await updatePassportDetails(guestDetails);
           //  await handleUpdateAddress(guestDetails);
             await handleUpdateName(guestDetails);
-            pushDocumentDetails(guestDetails);
-           
-          
             onSave();
             // await handleUpdateEmail();
             // await handleUpdatePhone();
@@ -544,6 +544,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             }
         } catch (error) {
             console.error("Failed to scan document:", error);
+            setAreButtonsVisible(false);
         }
     };
 
@@ -581,6 +582,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
+                setAreButtonsVisible(true);
             })
             .catch((error) => {
                 console.error('Error:', error);
@@ -621,6 +623,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 } else if (data.result) {
                     const profileData = data.responseData[0];
                     setDocumentType(profileData?.DocumentType || '');
+
                     setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || '');
                     setDocumentNumber(profileData?.DocumentNumber || '');
                     setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
@@ -982,6 +985,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     A new Guest added Successfully.
                 </Alert>
             )}
+
             <div className="guest-images">
                 <div className="user-pic">
                     {documentImage ? (
@@ -989,9 +993,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     ) : (
                         <div className="empty-placeholder">No profile picture available</div>
                     )}
-                    <button onClick={() => handleScan('front')} className='scan-button'>
-                        <i className="bi bi-upc-scan"></i>Scan
-                    </button>
+                    {documentImage && (
+                        <button onClick={() => handleScan('front')} className='scan-button'>
+                            <i className="bi bi-upc-scan"></i>Scan
+                        </button>
+                    )}
                 </div>
                 <div className="user-pic">
                     {documentImage && backScanButtonClicked ? (
@@ -999,9 +1005,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     ) : (
                         <div className="empty-placeholder">No profile picture available</div>
                     )}
-                    <button onClick={() => handleScan('back')} className='scan-button'>
-                        <i className="bi bi-upc-scan"></i>Scan
-                    </button>
+                    {documentImage && (
+                        <button onClick={() => handleScan('back')} className='scan-button'>
+                            <i className="bi bi-upc-scan"></i>Scan
+                        </button>
+                    )}
                 </div>
                 <div className="profile-pic">
                     {faceImage ? (
@@ -1010,27 +1018,27 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         <div className="empty-placeholder">No profile picture available</div>
                     )}
                 </div>
-                <div className='add-guest-button-container'>
-                    {reservationData.ReservationStatus === 'RESERVED' && (
-                        <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckIn(reservationData.ReservationNameID)}>
-                            Check In
-                            <i className="bi bi-check-square"></i>
+                {documentImage && (
+                    <div className='add-guest-button-container'>
+                        {reservationData.ReservationStatus === 'RESERVED' && (
+                            <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckIn(reservationData.ReservationNameID)}>
+                                Check In
+                                <i className="bi bi-check-square"></i>
+                            </button>
+                        )}
+                        {reservationData.ReservationStatus === 'CHECK-IN' && (
+                            <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckOut(reservationData.ReservationNameID)}>
+                                Check Out
+                                <i className="bi bi-x-square"></i>
+                            </button>
+                        )}
+                        <button type="button" className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`} onClick={addGuest}>
+                            Add Guest
+                            <i className="bi bi-plus-lg"></i>
                         </button>
-                    )}
-                    {reservationData.ReservationStatus === 'CHECK-IN' && (
-                        <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckOut(reservationData.ReservationNameID)}>
-                            Check Out
-                            <i className="bi bi-x-square"></i>
-                        </button>
-                    )}
-                    <button type="button" className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`} onClick={addGuest}>
-                        Add Guest
-                        <i className="bi bi-plus-lg"></i>
-                    </button>
-                </div>
-
+                    </div>
+                )}
             </div>
-
             <div className="guest-form">
                 <div className={`document-type ${errors.documentType ? 'has-error' : ''}`}>
                     <label>Document Type</label>
