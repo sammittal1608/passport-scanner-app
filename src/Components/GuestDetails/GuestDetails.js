@@ -1021,11 +1021,9 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     ) : (
                         <div className="empty-placeholder">No profile picture available</div>
                     )}
-                    {documentImage && (
-                        <button onClick={() => handleScan('front')} className='scan-button'>
-                            <i className="bi bi-upc-scan"></i>Scan
-                        </button>
-                    )}
+                    <button onClick={() => handleScan('front')} className='scan-button'>
+                        <i className="bi bi-upc-scan"></i>Scan
+                    </button>
                 </div>
                 <div className="user-pic">
                     {documentImage && backScanButtonClicked ? (
@@ -1033,11 +1031,9 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     ) : (
                         <div className="empty-placeholder">No profile picture available</div>
                     )}
-                    {documentImage && (
-                        <button onClick={() => handleScan('back')} className='scan-button'>
-                            <i className="bi bi-upc-scan"></i>Scan
-                        </button>
-                    )}
+                    <button onClick={() => handleScan('back')} className='scan-button'>
+                        <i className="bi bi-upc-scan"></i>Scan
+                    </button>
                 </div>
                 <div className="profile-pic">
                     {faceImage ? (
