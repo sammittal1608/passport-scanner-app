@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import logo from '../../Images/logo.png';
 import ID_GO from '../../Images/ID-GO.png';
 import './Home.css';
 import GuestDetails from '../GuestDetails/GuestDetails';
 import settings from '../../app.settings';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import axios from 'axios';
 
 const fetchReservationData = async (reservationId) => {
     try {
@@ -44,9 +44,12 @@ const fetchReservationData = async (reservationId) => {
         return null;
     }
 };
+
 const fetchReservationDataByRefNumber = async (refNumber) => {
     try {
-        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
+        const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber';
+
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -75,14 +78,14 @@ const fetchReservationDataByRefNumber = async (refNumber) => {
 
 const handlePushReservation = async (reservationData, roomNumber, adults) => {
     const reservationNumberState = reservationData?.ReservationNumber ?? '';
-    const pmsProfileId = reservationData?.GuestProfiles[0]?.PmsProfileID ?? '';
-    const familyName = reservationData?.GuestProfiles[0]?.FamilyName ?? '';
-    const givenName = reservationData?.GuestProfiles[0]?.GivenName ?? '';
-    const nationality = reservationData?.GuestProfiles[0]?.Nationality ?? '';
-    const gender = reservationData?.GuestProfiles[0]?.Gender ?? '';
-    const documentNumber = reservationData?.GuestProfiles[0]?.PassportNumber ?? '';
-    const documentType = reservationData?.GuestProfiles[0]?.DocumentType ?? '';
-    const guestDetails = reservationData?.GuestProfiles[0] ?? {};
+    const pmsProfileId = reservationData?.GuestProfiles?.[0]?.PmsProfileID ?? '';
+    const familyName = reservationData?.GuestProfiles?.[0]?.FamilyName ?? '';
+    const givenName = reservationData?.GuestProfiles?.[0]?.GivenName ?? '';
+    const nationality = reservationData?.GuestProfiles?.[0]?.Nationality ?? '';
+    const gender = reservationData?.GuestProfiles?.[0]?.Gender ?? '';
+    const documentNumber = reservationData?.GuestProfiles?.[0]?.PassportNumber ?? '';
+    const documentType = reservationData?.GuestProfiles?.[0]?.DocumentType ?? '';
+    const guestDetails = reservationData?.GuestProfiles?.[0] ?? {};
 
     const requestBody1 = {
         "RequestObject": [
@@ -224,7 +227,7 @@ function Home() {
     const [isButtonClicked, setIsButtonClicked] = useState(false);
     const [isEditingRoomNumber, setIsEditingRoomNumber] = useState(false);
     const [isEditingAdults, setIsEditingAdults] = useState(false);
-    const [editableRoomNumber, setEditableRoomNumber] = useState('0');
+    const [editableRoomNumber, setEditableRoomNumber] = useState('');
     const [editableAdults, setEditableAdults] = useState('');
 
     const roomNumberRef = useRef(null);
@@ -232,24 +235,30 @@ function Home() {
 
     const refreshReservationData = async (refNumber) => {
         const data = await fetchReservationDataByRefNumber(refNumber);
-        if (data) {
-            setReservationData(data.responseData[0]);
-            // const guestProfiles = data.responseData[0].GuestProfiles || [];
-            // setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
-            setEditableRoomNumber(data.responseData[0]?.RoomNumber || '0');
-            setEditableAdults(data.responseData[0]?.Adultcount || '0');
+        if (data && data.responseData && data.responseData.length > 0) {
+            const reservation = data.responseData[0];
+            setReservationData(reservation);
+            console.log("Setting room number:", reservation.RoomNumber);
+            setEditableRoomNumber(reservation.RoomNumber ?? '');
+            console.log("Setting adult count:", reservation.Adultcount);
+            setEditableAdults(reservation.Adultcount ?? '0');
+        } else {
+            console.error("Invalid data structure:", data);
         }
     };
 
     useEffect(() => {
         if (reservationId) {
             fetchReservationData(reservationId).then(data => {
-                if (data) {
-                    setReservationData(data.responseData[0]);
-                    const guestProfiles = data.responseData[0].GuestProfiles || [];
+                if (data && data.responseData && data.responseData.length > 0) {
+                    const reservation = data.responseData[0];
+                    setReservationData(reservation);
+                    const guestProfiles = reservation.GuestProfiles || [];
                     setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
-                    setEditableRoomNumber(data.responseData[0].RoomDetails.RoomNumber || '0');
-                    setEditableAdults(data.responseData[0].Adults);
+                    setEditableRoomNumber(reservation.RoomDetails.RoomNumber ?? '');
+                    setEditableAdults(reservation.Adults);
+                } else {
+                    console.error("Invalid data structure on initial fetch:", data);
                 }
             });
         }
@@ -292,20 +301,11 @@ function Home() {
 
     const handleKeyPress = async (event, type) => {
         if (event.key === 'Enter') {
+            await handlePushReservation(reservationData, editableRoomNumber, editableAdults);
             if (type === 'roomNumber') {
-                if (/^\d{5}$/.test(editableRoomNumber)) {
-                    await handlePushReservation(reservationData, editableRoomNumber, editableAdults);
-                    setIsEditingRoomNumber(false);
-                } else {
-                    alert("Room number should be a 5-digit number");
-                }
+                setIsEditingRoomNumber(false);
             } else if (type === 'adults') {
-                if (!isNaN(editableAdults) && editableAdults > 0) {
-                    await handlePushReservation(reservationData, editableRoomNumber, editableAdults);
-                    setIsEditingAdults(false);
-                } else {
-                    alert("Adult count should be a positive number");
-                }
+                setIsEditingAdults(false);
             }
         }
     };
@@ -396,20 +396,6 @@ function Home() {
                             <div>{reservationData.Child !== undefined ? reservationData.Child : ''}</div>
                         </div>
                     </div>
-                    {/* <div className='check-in-out-container'>
-                        {reservationData.ReservationStatus === 'RESERVED' && (
-                            <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckIn(reservationData.ReservationNameID)}>
-                                Check In
-                                <i className="bi bi-check-square"></i>
-                            </button>
-                        )}
-                        {reservationData.ReservationStatus === 'CHECK-IN' && (
-                            <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckOut(reservationData.ReservationNameID)}>
-                                Check Out
-                                <i className="bi bi-x-square"></i>
-                            </button>
-                        )}
-                    </div> */}
                     <div className="guest-details">
                         {guests.map((guest, index) => (
                             <div className="guest" key={index}>
