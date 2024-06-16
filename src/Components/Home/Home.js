@@ -47,9 +47,9 @@ const fetchReservationData = async (reservationId) => {
 
 const fetchReservationDataByRefNumber = async (refNumber) => {
     try {
-        const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber';
-
-        const response = await fetch(apiUrl, {
+        const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+       
+        const response = await fetch(corsProxyUrl+'http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
