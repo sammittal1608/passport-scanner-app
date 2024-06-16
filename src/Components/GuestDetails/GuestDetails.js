@@ -9,7 +9,10 @@ import settings from '../../app.settings.js';
 
 const fetchReservationData = async (reservationId) => {
     try {
-        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation', {
+         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+    const fetchurl = 'http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation';
+   
+        const response = await fetch(corsProxyUrl +fetchurl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -394,8 +397,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             }
 
             await updatePassportDetails(guestDetails);
-            pushDocumentDetails(guestDetails);
+          //  await handleUpdateAddress(guestDetails);
             await handleUpdateName(guestDetails);
+            pushDocumentDetails(guestDetails);
+           
+          
             onSave();
             // await handleUpdateEmail();
             // await handleUpdatePhone();
@@ -441,40 +447,10 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 destinationEntityID: settings.destinationEntityID,
                 destinationSystemType: settings.destinationSystemType,
                 UpdateProileRequest: {
-                    addresses: [
-                        {
-                            addressType: addressDetails.addressType || '',
-                            operaId: addressDetails.operaId || 0,
-                            primary: addressDetails.primary || true,
-                            displaySequence: addressDetails.displaySequence || 1,
-                            address1: addressDetails.address1 || '',
-                            address2: addressDetails.address2 || '',
-                            city: addressDetails.city || '',
-                            state: addressDetails.state || '',
-                            country: addressDetails.country || '',
-                            zip: addressDetails.zip || ''
-                        }
-                    ],
+                    addresses:null,
                     profileID: guestDetails.PmsProfileID,
-                    emails: [
-                        {
-                            emailType: emailDetails.emailType || '',
-                            operaId: emailDetails.operaId || 0,
-                            primary: emailDetails.primary || true,
-                            displaySequence: emailDetails.displaySequence || 1,
-                            // email: email || ''
-                        }
-                    ],
-                    phones: [
-                        {
-                            phoneType: phoneDetails.phoneType || '',
-                            phoneRole: phoneDetails.phoneRole || '',
-                            operaId: phoneDetails.operaId || 0,
-                            primary: phoneDetails.primary || true,
-                            displaySequence: phoneDetails.displaySequence || 1,
-                            // phoneNumber: phoneNumber || ''
-                        }
-                    ],
+                    emails: null,
+                    phones:null,
                     dob: dateOfBirth || '',
                     gender: gender || '',
                     nationality: nationality || '',
@@ -584,11 +560,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     ExpiryDate: expiryDate,
                     IssueDate: issueDate,
                     DocumentImage1: documentImage,
-                    DocumentImage2: null,
+                    DocumentImage2: documentImage2,
                     DocumentImage3: null,
                     FaceImage: faceImage,
                     CloudProfileDetailID: "",
-                    DocumentTypeCode: null,
+                    DocumentTypeCode: documentType,
                     IssueCountry: placeOfIssue
                 }
             ],
@@ -698,7 +674,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
 
 
-    const handleUpdateName = async (guestDetails) => {
+    const handleUpdateName =  async (guestDetails) => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
             kioskID: settings.kioskId,
@@ -711,10 +687,18 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             destinationEntityID: settings.destinationEntityID,
             destinationSystemType: settings.destinationSystemType,
             UpdateProileRequest: {
-                profileID: guestDetails.PmsProfileID,
-                GivenName: givenName,
-                MiddleName: middleName,
-                FamilyName: familyName
+                addresses: null,
+                profileID: pmsProfileId,
+                emails: null,
+                phones:null,
+                dob: dateOfBirth || '',
+                    gender: gender || '',
+                    nationality: nationality || '',
+                    issueCountry: placeOfIssue || '',
+                    documentNumber: documentNumber || '',
+                    documentType: documentType || '',
+                    issueDate: issueDate || '',
+                    expiryDate: expiryDate || ''
             }
         };
         console.log(requestBody);
@@ -765,16 +749,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     addresses: null,
                     profileID: pmsProfileId,
                     emails: null,
-                    phones: [
-                        {
-                            phoneType: phoneDetails.phoneType || '',
-                            phoneRole: "PHONE",
-                            operaId: phoneDetails.operaId || '',
-                            primary: phoneDetails.primary || false,
-                            displaySequence: phoneDetails.displaySequence || 0,
-                            // phoneNumber: phoneNumber
-                        }
-                    ],
+                    phones:null,
                     dob: guestDetails.BirthDate || '',
                     gender: guestDetails.Gender || '',
                     nationality: guestDetails.Nationality || '',
@@ -880,7 +855,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             UpdateProileRequest: {
                 addresses: [
                     {
-                        addressType: reservationData?.GuestProfiles[0].addresses[0].addressType,
+                        addressType: reservationData?.GuestProfiles?.GuestProfiles[0].addresses[0].addressType,
                         operaId: reservationData?.GuestProfiles[0].addresses[0].operaId,
                         primary: reservationData?.GuestProfiles[0].addresses[0].primary,
                         displaySequence: reservationData?.GuestProfiles[0].addresses[0].displaySequence,
@@ -895,13 +870,13 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 profileID: pmsProfileId,
                 emails: null,
                 phones: null,
-                dob: reservationData?.dob,
-                gender: reservationData?.gender,
-                nationality: reservationData?.nationality,
-                issueCountry: reservationData?.issueCountry,
-                documentNumber: reservationData?.documentNumber,
-                documentType: reservationData?.documentType,
-                issueDate: reservationData?.issueDate
+                dob: null,
+                gender: null,
+                nationality: null,
+                issueCountry: null,
+                documentNumber: null,
+                documentType: null,
+                issueDate: null
             }
         };
 

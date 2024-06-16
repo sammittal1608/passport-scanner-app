@@ -46,7 +46,9 @@ const fetchReservationData = async (reservationId) => {
 };
 const fetchReservationDataByRefNumber = async (refNumber) => {
     try {
-        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
+        const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+       
+        const response = await fetch(corsProxyUrl+'http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -233,7 +235,7 @@ function Home() {
     const refreshReservationData = async (refNumber) => {
         const data = await fetchReservationDataByRefNumber(refNumber);
         if (data) {
-            setReservationData(data.responseData[0]);
+           // setReservationData(data.responseData[0]);
             // const guestProfiles = data.responseData[0].GuestProfiles || [];
             // setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
             setEditableRoomNumber(data.responseData[0]?.RoomNumber || '0');
