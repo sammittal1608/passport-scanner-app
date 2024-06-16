@@ -250,7 +250,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
             if (!pmsProfileId) {
 
-                response2 = await axios.post(corsProxyUrl + apiUrl2, requestBody2, {
+                response2 = await axios.post( apiUrl2, requestBody2, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
