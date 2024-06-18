@@ -48,8 +48,8 @@ const fetchReservationData = async (reservationId) => {
 const fetchReservationDataByRefNumber = async (refNumber) => {
     try {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-       
-        const response = await fetch(corsProxyUrl+'http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
+
+        const response = await fetch(corsProxyUrl + 'http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -136,77 +136,77 @@ const handlePushReservation = async (reservationData, roomNumber, adults) => {
     }
 };
 
-const handleCheckIn = async (reservationNameID) => {
-    try {
-        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckIn', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                hotelDomain: settings.hotelDomain,
-                kioskID: settings.kioskId,
-                username: settings.username,
-                password: settings.password,
-                systemType: settings.systemType,
-                language: settings.language,
-                legNumber: settings.legNumber,
-                chainCode: settings.chainCode,
-                destinationEntityID: settings.destinationEntityID,
-                destinationSystemType: settings.destinationSystemType,
-                SendFolio: settings.SendFolio,
-                OperaReservation: {
-                    ReservationNameID: reservationNameID
-                }
-            })
-        });
+// const handleCheckIn = async (reservationNameID) => {
+//     try {
+//         const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckIn', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//             body: JSON.stringify({
+//                 hotelDomain: settings.hotelDomain,
+//                 kioskID: settings.kioskId,
+//                 username: settings.username,
+//                 password: settings.password,
+//                 systemType: settings.systemType,
+//                 language: settings.language,
+//                 legNumber: settings.legNumber,
+//                 chainCode: settings.chainCode,
+//                 destinationEntityID: settings.destinationEntityID,
+//                 destinationSystemType: settings.destinationSystemType,
+//                 SendFolio: settings.SendFolio,
+//                 OperaReservation: {
+//                     ReservationNameID: reservationNameID
+//                 }
+//             })
+//         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
 
-        const data = await response.json();
-        console.log("Check-in successful:", data);
-    } catch (error) {
-        console.error("Failed to check in:", error);
-    }
-};
+//         const data = await response.json();
+//         console.log("Check-in successful:", data);
+//     } catch (error) {
+//         console.error("Failed to check in:", error);
+//     }
+// };
 
-const handleCheckOut = async (reservationNameID) => {
-    try {
-        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckOut', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                hotelDomain: "EU",
-                kioskID: "KIOSK",
-                username: "SUPERVISOR",
-                password: "PEGASUS2021",
-                systemType: "KIOSK",
-                language: "EN",
-                legNumber: null,
-                chainCode: "CHA",
-                destinationEntityID: "TI",
-                destinationSystemType: "PMS",
-                SendFolio: false,
-                OperaReservation: {
-                    ReservationNameID: reservationNameID
-                }
-            })
-        });
+// const handleCheckOut = async (reservationNameID) => {
+//     try {
+//         const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckOut', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//             body: JSON.stringify({
+//                 hotelDomain: "EU",
+//                 kioskID: "KIOSK",
+//                 username: "SUPERVISOR",
+//                 password: "PEGASUS2021",
+//                 systemType: "KIOSK",
+//                 language: "EN",
+//                 legNumber: null,
+//                 chainCode: "CHA",
+//                 destinationEntityID: "TI",
+//                 destinationSystemType: "PMS",
+//                 SendFolio: false,
+//                 OperaReservation: {
+//                     ReservationNameID: reservationNameID
+//                 }
+//             })
+//         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
 
-        const data = await response.json();
-        console.log("Check-out successful:", data);
-    } catch (error) {
-        console.error("Failed to check out:", error);
-    }
-};
+//         const data = await response.json();
+//         console.log("Check-out successful:", data);
+//     } catch (error) {
+//         console.error("Failed to check out:", error);
+//     }
+// };
 
 const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -227,7 +227,7 @@ function Home() {
     const [isButtonClicked, setIsButtonClicked] = useState(false);
     const [isEditingRoomNumber, setIsEditingRoomNumber] = useState(false);
     const [isEditingAdults, setIsEditingAdults] = useState(false);
-    const [editableRoomNumber, setEditableRoomNumber] = useState('');
+    const [editableRoomNumber, setEditableRoomNumber] = useState('0');
     const [editableAdults, setEditableAdults] = useState('');
 
     const roomNumberRef = useRef(null);
@@ -235,17 +235,16 @@ function Home() {
 
     const refreshReservationData = async (refNumber) => {
         const data = await fetchReservationDataByRefNumber(refNumber);
-        if (data && data.responseData && data.responseData.length > 0) {
-            const reservation = data.responseData[0];
-            setReservationData(reservation);
-            console.log("Setting room number:", reservation.RoomNumber);
-            setEditableRoomNumber(reservation.RoomNumber ?? '0');
-            console.log("Setting adult count:", reservation.Adultcount);
-            setEditableAdults(reservation.Adultcount ?? '0');
-        } else {
-            console.error("Invalid data structure:", data);
-        }
+        // if (data && data.responseData && data.responseData.length > 0) {
+        //     const reservation = data.responseData[0];
+        //     setReservationData(reservation);
+        //     setEditableRoomNumber(reservation.RoomNumber ?? '0');
+        //     setEditableAdults(reservation.Adultcount ?? '0');
+        // } else {
+        //     console.error("Invalid data structure:", data);
+        // }
     };
+
 
     useEffect(() => {
         if (reservationId) {
@@ -255,7 +254,7 @@ function Home() {
                     setReservationData(reservation);
                     const guestProfiles = reservation.GuestProfiles || [];
                     setGuests(guestProfiles.map(profile => profile.GuestName || 'Guest'));
-                    setEditableRoomNumber(reservation.RoomDetails.RoomNumber ?? '');
+                    setEditableRoomNumber(reservation.RoomDetails?.RoomNumber ?? '0');
                     setEditableAdults(reservation.Adults);
                 } else {
                     console.error("Invalid data structure on initial fetch:", data);
@@ -356,9 +355,11 @@ function Home() {
                                     onBlur={() => setIsEditingRoomNumber(false)}
                                 />
                             ) : (
-                                <div onClick={handleRoomNumberClick}>{editableRoomNumber}</div>
+                                <div onClick={handleRoomNumberClick}>{editableRoomNumber === '0' ? '0' : editableRoomNumber}</div>
                             )}
                         </div>
+
+
                         <div className="info">
                             <div>GUEST NAME</div>
                             <div>{reservationData.GuestProfiles[0]?.GuestName}</div>

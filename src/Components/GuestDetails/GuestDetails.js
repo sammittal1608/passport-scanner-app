@@ -9,10 +9,10 @@ import settings from '../../app.settings.js';
 
 const fetchReservationData = async (reservationId) => {
     try {
-         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-    const fetchurl = 'http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation';
-   
-        const response = await fetch(corsProxyUrl +fetchurl, {
+        const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+        const fetchurl = 'http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation';
+
+        const response = await fetch(corsProxyUrl + fetchurl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -69,6 +69,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     const [nationalityList, setNationalityList] = useState([]);
     const [nationalityMapping, setNationalityMapping] = useState({});
     const [areButtonsVisible, setAreButtonsVisible] = useState(false);
+    const [isCheckIn, setIsCheckIn] = useState(false);
+    const [isCheckOut, setIsCheckOut] = useState(false);
 
 
 
@@ -129,8 +131,12 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             fetchProfileDocuments(guestData.PmsProfileID, reservationData.ReservationNameID);
             setDateOfBirth(guestData?.BirthDate);
             setGender(guestData?.gender);
+    
+            fetchCheckInCheckOutInfo(reservationData.ReservationNameID, guestData.PmsProfileID);
         }
     }, [reservationData, guestData]);
+    
+
 
     useEffect(() => {
         fetchNationalityList().then(data => {
@@ -400,7 +406,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             }
 
             await updatePassportDetails(guestDetails);
-          //  await handleUpdateAddress(guestDetails);
+            //  await handleUpdateAddress(guestDetails);
             await handleUpdateName(guestDetails);
             onSave();
             // await handleUpdateEmail();
@@ -447,10 +453,10 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 destinationEntityID: settings.destinationEntityID,
                 destinationSystemType: settings.destinationSystemType,
                 UpdateProileRequest: {
-                    addresses:null,
+                    addresses: null,
                     profileID: guestDetails.PmsProfileID,
                     emails: null,
-                    phones:null,
+                    phones: null,
                     dob: dateOfBirth || '',
                     gender: gender || '',
                     nationality: nationality || '',
@@ -675,9 +681,42 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         }
     };
 
+    const fetchCheckInCheckOutInfo = async (reservationNameID, profileID) => {
+        try {
+            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchProfileInformationProfileId';
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    "RequestObject": {
+                        "ReservationNameID": reservationNameID,
+                        "ProfileID": profileID
+                    },
+                    "SyncFromCloud": null
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Fetched check-in/check-out info:", data);
+
+            if (data && data.responseData && data.responseData.length > 0) {
+                const checkInCheckOutInfo = data.responseData[0];
+                setIsCheckIn(checkInCheckOutInfo.IsCheckIn);
+                setIsCheckOut(checkInCheckOutInfo.IsCheckOut);
+            }
+        } catch (error) {
+            console.error("Failed to fetch check-in/check-out info:", error);
+        }
+    };
 
 
-    const handleUpdateName =  async (guestDetails) => {
+    const handleUpdateName = async (guestDetails) => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
             kioskID: settings.kioskId,
@@ -693,15 +732,15 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 addresses: null,
                 profileID: pmsProfileId,
                 emails: null,
-                phones:null,
+                phones: null,
                 dob: dateOfBirth || '',
-                    gender: gender || '',
-                    nationality: nationality || '',
-                    issueCountry: placeOfIssue || '',
-                    documentNumber: documentNumber || '',
-                    documentType: documentType || '',
-                    issueDate: issueDate || '',
-                    expiryDate: expiryDate || ''
+                gender: gender || '',
+                nationality: nationality || '',
+                issueCountry: placeOfIssue || '',
+                documentNumber: documentNumber || '',
+                documentType: documentType || '',
+                issueDate: issueDate || '',
+                expiryDate: expiryDate || ''
             }
         };
         console.log(requestBody);
@@ -752,7 +791,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     addresses: null,
                     profileID: pmsProfileId,
                     emails: null,
-                    phones:null,
+                    phones: null,
                     dob: guestDetails.BirthDate || '',
                     gender: guestDetails.Gender || '',
                     nationality: guestDetails.Nationality || '',
@@ -905,28 +944,22 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         }
     };
 
-    const handleCheckIn = async (reservationNameID) => {
+    const handleCheckInCheckOut = async (reservationNameID, profileID, checkIn, checkOut) => {
         try {
-            const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckIn', {
+            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/UpdateGuestReserveStatus';
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    hotelDomain: settings.hotelDomain,
-                    kioskID: settings.kioskId,
-                    username: settings.username,
-                    password: settings.password,
-                    systemType: settings.systemType,
-                    language: settings.language,
-                    legNumber: settings.legNumber,
-                    chainCode: settings.chainCode,
-                    destinationEntityID: settings.destinationEntityID,
-                    destinationSystemType: settings.destinationSystemType,
-                    SendFolio: settings.SendFolio,
-                    OperaReservation: {
-                        ReservationNameID: reservationNameID
-                    }
+                    "RequestObject": {
+                        "ReservationNameID": reservationNameID,
+                        "ProfileID": profileID,
+                        "Checkin": checkIn,
+                        "Checkout": checkOut
+                    },
+                    "SyncFromCloud": null
                 })
             });
 
@@ -935,47 +968,17 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             }
 
             const data = await response.json();
-            console.log("Check-in successful:", data);
+            console.log(`${checkIn ? "Check-in" : "Check-out"} successful:`, data);
+
+            // Fetch the updated status to reflect the changes
+            fetchCheckInCheckOutInfo(reservationNameID, profileID);
         } catch (error) {
-            console.error("Failed to check in:", error);
+            console.error(`Failed to ${checkIn ? "check in" : "check out"}:`, error);
         }
     };
 
-    const handleCheckOut = async (reservationNameID) => {
-        try {
-            const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckOut', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    hotelDomain: "EU",
-                    kioskID: "KIOSK",
-                    username: "SUPERVISOR",
-                    password: "PEGASUS2021",
-                    systemType: "KIOSK",
-                    language: "EN",
-                    legNumber: null,
-                    chainCode: "CHA",
-                    destinationEntityID: "TI",
-                    destinationSystemType: "PMS",
-                    SendFolio: false,
-                    OperaReservation: {
-                        ReservationNameID: reservationNameID
-                    }
-                })
-            });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
 
-            const data = await response.json();
-            console.log("Check-out successful:", data);
-        } catch (error) {
-            console.error("Failed to check out:", error);
-        }
-    };
 
 
     return (
@@ -1016,14 +1019,14 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 </div>
                 {documentImage && (
                     <div className='add-guest-button-container'>
-                        {reservationData.ReservationStatus === 'RESERVED' && (
-                            <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckIn(reservationData.ReservationNameID)}>
+                        {!isCheckIn && (
+                            <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckInCheckOut(reservationData.ReservationNameID, guestData.PmsProfileID, 1, null)}>
                                 Check In
                                 <i className="bi bi-check-square"></i>
                             </button>
                         )}
-                        {reservationData.ReservationStatus === 'CHECK-IN' && (
-                            <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckOut(reservationData.ReservationNameID)}>
+                        {isCheckIn && !isCheckOut && (
+                            <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckInCheckOut(reservationData.ReservationNameID, guestData.PmsProfileID, null, 1)}>
                                 Check Out
                                 <i className="bi bi-x-square"></i>
                             </button>
@@ -1034,6 +1037,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         </button>
                     </div>
                 )}
+
+
             </div>
             <div className="guest-form">
                 <div className={`document-type ${errors.documentType ? 'has-error' : ''}`}>
