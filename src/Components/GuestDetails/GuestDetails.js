@@ -12,7 +12,7 @@ const fetchReservationData = async (reservationId) => {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
         const fetchurl = 'http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation';
 
-        const response = await fetch(corsProxyUrl + fetchurl, {
+        const response = await fetch( fetchurl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ const fetchReservationData = async (reservationId) => {
 export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest, isButtonClicked, onSave }) {
     const { reservationId } = useParams();
 
-    const [saturated, setSalutation] = useState('');
+    const [salutation, setSalutation] = useState('');
     const [documentType, setDocumentType] = useState('');
     const [nationality, setNationality] = useState('');
     const [documentNumber, setDocumentNumber] = useState('');
@@ -71,17 +71,12 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     const [areButtonsVisible, setAreButtonsVisible] = useState(false);
     const [isCheckIn, setIsCheckIn] = useState(false);
     const [isCheckOut, setIsCheckOut] = useState(false);
-
-
-
-    // const [phoneNumber, setPhoneNumber] = useState('');
-    // const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
     const [reservationNumberState, setReservationNumber] = useState('');
-    const [reservationData, setReservationData] = useState('');
+    const [reservationData, setReservationData] = useState({});
     const [backScanButtonClicked, setBackScanButtonClicked] = useState(false);
-
     const [errors, setErrors] = useState({});
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
     useEffect(() => {
         if (reservationId) {
@@ -96,46 +91,81 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             });
         }
     }, [reservationId]);
-    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
-
-    useEffect(() => {
-        if (guestData) {
-            setPmsProfileId(guestData.PmsProfileID || '');
-            setDocumentType(guestData.DocumentType || '');
-            setNationality(guestData.Nationality || '');
-            setDocumentNumber(guestData.PassportNumber || '');
-            setDateOfBirth(displayDate(guestData.dateOfBirth || ''));
-            setGivenName(guestData.FirstName || '');
-            setMiddleName(guestData.MiddleName || '');
-            setGender(guestData.Gender || '');
-            setFamilyName(guestData.LastName || '');
-            setIssueDate(guestData.IssueDate ? guestData.IssueDate.split('T')[0] : '');
-            setExpiryDate(guestData.ExpiryDate ? guestData.ExpiryDate.split('T')[0] : '');
-            setPlaceOfIssue(guestData.IssueCountry || '');
-            setDocumentImage(guestData.DocumentImageBase64 || null);
-            setFaceImage(guestData.FaceImageBase64 || null);
-            setDocumentImage2(guestData.DocumentImageBase64 || null);
-            // setPhoneNumber(guestData.PhoneNumber || '');
-            // setEmail(guestData.Email || '');
-            setAddress(guestData.Address || '');
-            setReservationNumber(guestData.ReservationNumber || reservationNumber);
-            setSalutation(guestData.Saturated || '');
-        } else if (reservationNumber) {
-            setReservationNumber(reservationNumber);
-        }
-    }, [guestData, reservationNumber]);
+    // useEffect(() => {
+    //     if (guestData) {
+    //         setPmsProfileId(guestData.PmsProfileID || '');
+    //         setDocumentType(guestData.DocumentType || '');
+    //         setNationality(guestData.Nationality || '');
+    //         setDocumentNumber(guestData.PassportNumber || '');
+    //         setDateOfBirth(displayDate(guestData.dateOfBirth || ''));
+    //         setGivenName(guestData.FirstName || '');
+    //         setMiddleName(guestData.MiddleName || '');
+    //         setGender(guestData.Gender || '');
+    //         setFamilyName(guestData.LastName || '');
+    //         setIssueDate(guestData.IssueDate ? guestData.IssueDate.split('T')[0] : '');
+    //         setExpiryDate(guestData.ExpiryDate ? guestData.ExpiryDate.split('T')[0] : '');
+    //         setPlaceOfIssue(guestData.IssueCountry || '');
+    //         setDocumentImage(guestData.DocumentImageBase64 || null);
+    //         setFaceImage(guestData.FaceImageBase64 || null);
+    //         setDocumentImage2(guestData.DocumentImageBase64 || null);
+    //         // setPhoneNumber(guestData.PhoneNumber || '');
+    //         // setEmail(guestData.Email || '');
+    //         setAddress(guestData.Address || '');
+    //         setReservationNumber(guestData.ReservationNumber || reservationNumber);
+    //         setSalutation(guestData.Saturated || '');
+    //     } else if (reservationNumber) {
+    //         setReservationNumber(reservationNumber);
+    //     }
+    // }, [guestData, reservationNumber]);
 
     useEffect(() => {
-        if (reservationData && guestData && guestData.PmsProfileID) {
-            fetchProfileDocuments(guestData.PmsProfileID, reservationData.ReservationNameID);
-            setDateOfBirth(guestData?.BirthDate);
-            setGender(guestData?.gender);
-    
-            fetchCheckInCheckOutInfo(reservationData.ReservationNameID, guestData.PmsProfileID);
-        }
-    }, [reservationData, guestData]);
-    
+        const fetchData = async () => {
+            if (guestData) {
+                setPmsProfileId(guestData.PmsProfileID || '');
+                if (guestData.BirthDate == "0001-01-01") {
+                    setDateOfBirth('');
+                }
+                else {
+                    setDateOfBirth(guestData?.BirthDate || '');
+                }
+                setGender(guestData.Gender || '');
+                setAddress(guestData.Address || '');
+                setReservationNumber(reservationData.ReservationNumber || '');
+                setSalutation(guestData.Saturated || '');
+            } else if (reservationNumber) {
+                setReservationNumber(reservationNumber);
+            }
+
+            if (reservationData && guestData && guestData.PmsProfileID) {
+                const profileData = await fetchProfileDocuments(guestData.PmsProfileID, reservationData.ReservationNameID);
+
+                if (profileData) {
+                    setDocumentType(profileData?.DocumentType || '');
+                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || '');
+                    setDocumentNumber(profileData?.DocumentNumber || '');
+                    setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
+                    setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
+                    setPlaceOfIssue(profileData?.IssueCountry || '');
+                    setDocumentImage(profileData?.DocumentImage1 || null);
+                    setFaceImage(profileData?.FaceImage || null);
+                    setGivenName(profileData?.FirstName || '');
+                    setMiddleName(profileData?.MiddleName || '');
+                    setFamilyName(profileData?.LastName || '');
+                }
+
+                // setDateOfBirth(reservationData?.BirthDate || '');
+                // setGender(reservationData?.gender || '');
+
+                fetchCheckInCheckOutInfo(reservationData.ReservationNameID, guestData.PmsProfileID);
+            }
+        };
+
+        fetchData();
+    }, [guestData, reservationNumber, reservationData, nationalityMapping]);
+
+
+
 
 
     useEffect(() => {
@@ -165,17 +195,17 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
     if (!isVisible) return null;
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
-    };
+    // const formatDate = (dateString) => {
+    //     const date = new Date(dateString);
+    //     const day = String(date.getDate()).padStart(2, '0');
+    //     const month = String(date.getMonth() + 1).padStart(2, '0');
+    //     const year = date.getFullYear();
+    //     return `${day}-${month}-${year}`;
+    // };
 
-    const displayDate = (dateString) => {
-        return dateString === '0001-01-01T00:00:00' ? 'dd-mm-yyyy' : formatDate(dateString);
-    };
+    // const displayDate = (dateString) => {
+    //     return dateString === '0001-01-01T00:00:00' ? 'dd-mm-yyyy' : formatDate(dateString);
+    // };
 
     const getGuestDetails = (pmsProfileID) => {
         const guestProfiles = reservationData.GuestProfiles;
@@ -265,6 +295,9 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     }
                 });
                 console.log('create new accompany api save successful:', response2.data);
+                console.log(reservationData)
+                setReservationData(fetchReservationData(reservationId));
+                console.log(reservationData)
 
             }
             var guestDetails;
@@ -406,6 +439,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             }
 
             await updatePassportDetails(guestDetails);
+            pushDocumentDetails(guestDetails);
             //  await handleUpdateAddress(guestDetails);
             await handleUpdateName(guestDetails);
             onSave();
@@ -494,7 +528,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcscannerapi.saavy-pay.com:8082/api/IDScan/ScanDocument';
-            const response = await fetch(corsProxyUrl + apiUrl, {
+            const response = await fetch( corsProxyUrl + apiUrl, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -554,9 +588,6 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         }
     };
 
-
-
-
     const pushDocumentDetails = (guestDetails) => {
         const requestBody = {
             RequestObject: [
@@ -598,7 +629,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
 
 
-    const fetchProfileDocuments = (pmsProfileId, reservationNameID) => {
+    const fetchProfileDocuments = async (pmsProfileId, reservationNameID) => {
         const requestBody = {
             RequestObject: {
                 ProfileID: pmsProfileId,
@@ -609,43 +640,35 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
         const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchProfileDocumentImageByProfileID';
 
-        fetch(corsProxyUrl + apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        })
-            .then(response => {
-                if (!response.ok) {
-                    console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
-                    return response.text();
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (typeof data === 'string') {
-                    console.error('Error page HTML:', data);
-                } else if (data.result) {
-                    const profileData = data.responseData[0];
-                    setDocumentType(profileData?.DocumentType || '');
-
-                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || '');
-                    setDocumentNumber(profileData?.DocumentNumber || '');
-                    setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
-                    setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
-                    setPlaceOfIssue(profileData?.IssueCountry || '');
-                    setDocumentImage(profileData?.DocumentImage1 || null);
-                    setFaceImage(profileData?.FaceImage || null);
-                    setGivenName(profileData?.FirstName || '');
-                    setMiddleName(profileData?.MiddleName || '');
-                    setFamilyName(profileData?.LastName || '');
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
             });
+
+            if (!response.ok) {
+                console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+                return null;
+            }
+
+            const data = await response.json();
+            if (typeof data === 'string') {
+                console.error('Error page HTML:', data);
+                return null;
+            }
+
+            if (data.result) {
+                return data.responseData[0];
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            return null;
+        }
     };
+
 
 
     const fetchNationalityList = async () => {
@@ -1073,10 +1096,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
                     {errors.dateOfBirth && <div className="error">{errors.dateOfBirth}</div>}
                 </div>
-                <div className="saturated">
+
+                {/* <div className="saturated">
                     <label>Salutation</label>
-                    <input type="text" value={saturated} onChange={(e) => setSalutation(e.target.value)} />
-                </div>
+                    <input type="text" value={salutation} onChange={(e) => setSalutation(e.target.value)} />
+                </div> */}
                 <div className={`given-name ${errors.givenName ? 'has-error' : ''}`}>
                     <label>Given Name</label>
                     <input type="text" value={givenName} onChange={(e) => setGivenName(e.target.value)} />
@@ -1102,9 +1126,9 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     <label>Gender</label>
                     <select value={gender} onChange={(e) => setGender(e.target.value)}>
                         <option value="">Select Gender</option>
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
-                        <option value="O">Other</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        {/* <option value="Other">Other</option> */}
                     </select>
                     {errors.gender && <div className="error">{errors.gender}</div>}
                 </div>
