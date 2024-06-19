@@ -12,7 +12,7 @@ const fetchReservationData = async (reservationId) => {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
         const fetchurl = 'http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation';
 
-        const response = await fetch( fetchurl, {
+        const response = await fetch(fetchurl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -207,11 +207,16 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     //     return dateString === '0001-01-01T00:00:00' ? 'dd-mm-yyyy' : formatDate(dateString);
     // };
 
-    const getGuestDetails = (pmsProfileID) => {
-        const guestProfiles = reservationData.GuestProfiles;
+    const getGuestDetails = (pmsProfileID, ReservationData) => {
+        if (!ReservationData || !ReservationData.GuestProfiles) {
+            console.error("reservationData or GuestProfiles is undefined");
+            return null;
+        }
+        const guestProfiles = ReservationData?.GuestProfiles;
         const guestDetails = guestProfiles.find(profile => profile.PmsProfileID === pmsProfileID);
         return guestDetails;
     };
+
 
     const handleValidation = () => {
         const newErrors = {};
@@ -285,6 +290,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
             let response = {};
             let response2 = {};
+            let updatedReservationData = reservationData;
 
 
             if (!pmsProfileId) {
@@ -295,9 +301,11 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     }
                 });
                 console.log('create new accompany api save successful:', response2.data);
-                console.log(reservationData)
-                setReservationData(fetchReservationData(reservationId));
-                console.log(reservationData)
+                const updatedReservation = await fetchReservationData(reservationId);
+                updatedReservationData = updatedReservation.responseData[0];
+
+                setReservationData(updatedReservationData);
+                console.log('Updated reservation data:', updatedReservationData);
 
             }
             var guestDetails;
@@ -317,10 +325,10 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             //     console.error('Failed to get PmsProfileID from response');
             // }
             if (newPmsProfileId && newPmsProfileId != null) {
-                guestDetails = await getGuestDetails(newPmsProfileId);
+                guestDetails = await getGuestDetails(newPmsProfileId, updatedReservationData);
             }
             else {
-                guestDetails = await getGuestDetails(pmsProfileId);
+                guestDetails = await getGuestDetails(pmsProfileId, updatedReservationData);
 
             }
 
@@ -528,7 +536,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcscannerapi.saavy-pay.com:8082/api/IDScan/ScanDocument';
-            const response = await fetch( corsProxyUrl + apiUrl, {
+            const response = await fetch(corsProxyUrl + apiUrl, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -704,41 +712,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         }
     };
 
-    const fetchCheckInCheckOutInfo = async (reservationNameID, profileID) => {
-        try {
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchProfileInformationProfileId';
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    "RequestObject": {
-                        "ReservationNameID": reservationNameID,
-                        "ProfileID": profileID
-                    },
-                    "SyncFromCloud": null
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Fetched check-in/check-out info:", data);
-
-            if (data && data.responseData && data.responseData.length > 0) {
-                const checkInCheckOutInfo = data.responseData[0];
-                setIsCheckIn(checkInCheckOutInfo.IsCheckIn);
-                setIsCheckOut(checkInCheckOutInfo.IsCheckOut);
-            }
-        } catch (error) {
-            console.error("Failed to fetch check-in/check-out info:", error);
-        }
-    };
-
-
+    
+    
     const handleUpdateName = async (guestDetails) => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
@@ -778,7 +753,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 }
             });
             console.log('Update name successful:', response.data);
-        } catch (error) {
+            } catch (error) {
             if (error.response) {
                 console.error('Server responded with non-2xx status:', error.response.data);
             } else if (error.request) {
@@ -787,18 +762,18 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 console.error('Error setting up the request:', error.message);
             }
             console.error('Failed to update name details:', error);
-        }
+            }
     };
-
+    
     const handleUpdatePhone = async () => {
         try {
             var guestDetails = await getGuestDetails(pmsProfileId);
             if (!guestDetails) {
                 throw new Error('Guest details not found');
             }
-
+            
             const phoneDetails = guestDetails.Phones ? guestDetails.Phones[0] : {};
-
+            
             const requestBody = {
                 hotelDomain: settings.hotelDomain,
                 kioskID: settings.kioskId,
@@ -824,29 +799,29 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                     issueDate: guestDetails.IssueDate || ''
                 }
             };
-
+            
             console.log(requestBody);
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdatePhoneList';
-
+            
             const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                    }
             });
             console.log('Update phone list successful:', response.data);
-        } catch (error) {
+            } catch (error) {
             if (error.response) {
                 console.error('Server responded with non-2xx status:', error.response.data);
-            } else if (error.request) {
-                console.error('No response received:', error.request);
+                } else if (error.request) {
+                    console.error('No response received:', error.request);
             } else {
                 console.error('Error setting up the request:', error.message);
             }
             console.error('Failed to update phone list:', error);
         }
-    };
-
+        };
+        
     const handleUpdateEmail = async () => {
         let guestDetails = getGuestDetails(pmsProfileId);
         const requestBody = {
@@ -870,7 +845,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         primary: reservationData?.primary,
                         displaySequence: reservationData?.displaySequence,
                         // email: email
-                    }
+                        }
                 ],
                 phones: null,
                 dob: reservationData?.dob,
@@ -880,13 +855,13 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 documentNumber: reservationData?.documentNumber,
                 documentType: reservationData?.documentType,
                 issueDate: reservationData?.issueDate
-            }
-        };
-
-        try {
-            const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdateEmailList';
-
+                }
+                };
+                
+                try {
+                    const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+                    const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdateEmailList';
+                    
             const response = await axios.post(apiUrl, requestBody, {
                 headers: {
                     'Content-Type': 'application/json'
@@ -898,14 +873,14 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 console.error('Server responded with non-2xx status:', error.response.data);
             } else if (error.request) {
                 console.error('No response received:', error.request);
-            } else {
+                } else {
                 console.error('Error setting up the request:', error.message);
             }
             console.error('Failed to update email list:', error);
         }
-    };
+        };
 
-    const handleUpdateAddress = async () => {
+        const handleUpdateAddress = async () => {
         const requestBody = {
             hotelDomain: settings.hotelDomain,
             kioskID: settings.kioskId,
@@ -930,21 +905,21 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                         state: reservationData?.GuestProfiles[0].addresses[0].state,
                         country: reservationData?.GuestProfiles[0].addresses[0].country,
                         zip: reservationData?.GuestProfiles[0].addresses[0].zip
-                    }
-                ],
-                profileID: pmsProfileId,
-                emails: null,
-                phones: null,
-                dob: null,
-                gender: null,
-                nationality: null,
-                issueCountry: null,
-                documentNumber: null,
+                        }
+                        ],
+                        profileID: pmsProfileId,
+                        emails: null,
+                        phones: null,
+                        dob: null,
+                        gender: null,
+                        nationality: null,
+                        issueCountry: null,
+                        documentNumber: null,
                 documentType: null,
                 issueDate: null
             }
         };
-
+        
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdateAddressList';
@@ -953,7 +928,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 headers: {
                     'Content-Type': 'application/json'
                 }
-            });
+                });
             console.log('Update address list successful:', response.data);
         } catch (error) {
             if (error.response) {
@@ -967,6 +942,39 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         }
     };
 
+    const fetchCheckInCheckOutInfo = async (reservationNameID, profileID) => {
+        try {
+            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchProfileInformationProfileId';
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    "RequestObject": {
+                        "ReservationNameID": reservationNameID,
+                        "ProfileID": profileID
+                    },
+                    "SyncFromCloud": null
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Fetched check-in/check-out info:", data);
+
+            if (data && data.responseData && data.responseData.length > 0) {
+                const checkInCheckOutInfo = data.responseData[0];
+                setIsCheckIn(checkInCheckOutInfo.IsCheckIn);
+                setIsCheckOut(checkInCheckOutInfo.IsCheckOut);
+            }
+        } catch (error) {
+            console.error("Failed to fetch check-in/check-out info:", error);
+        }
+    };
     const handleCheckInCheckOut = async (reservationNameID, profileID, checkIn, checkOut) => {
         try {
             const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/UpdateGuestReserveStatus';
@@ -1042,13 +1050,13 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 </div>
                 {documentImage && (
                     <div className='add-guest-button-container'>
-                        {!isCheckIn && (
+                        {isCheckIn && (
                             <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckInCheckOut(reservationData.ReservationNameID, guestData.PmsProfileID, 1, null)}>
                                 Check In
                                 <i className="bi bi-check-square"></i>
                             </button>
                         )}
-                        {isCheckIn && !isCheckOut && (
+                        {!isCheckIn && isCheckOut && (
                             <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckInCheckOut(reservationData.ReservationNameID, guestData.PmsProfileID, null, 1)}>
                                 Check Out
                                 <i className="bi bi-x-square"></i>
