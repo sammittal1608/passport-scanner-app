@@ -64,7 +64,7 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
     const [documentImage, setDocumentImage] = useState(null);
     const [faceImage, setFaceImage] = useState(null);
     const [pmsProfileId, setPmsProfileId] = useState('');
-    const [documentImage2, setDocumentImage2] = useState('');
+    const [documentImage2, setDocumentImage2] = useState(null);
     const [nationalityList, setNationalityList] = useState([]);
     const [nationalityMapping, setNationalityMapping] = useState({});
     const [areButtonsVisible, setAreButtonsVisible] = useState(false);
@@ -140,6 +140,8 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
                 const profileData = await fetchProfileDocuments(guestData.PmsProfileID, reservationData.ReservationNameID);
 
                 if (profileData) {
+                    
+                  
                     setDocumentType(profileData?.DocumentType || '');
                     setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || '');
                     setDocumentNumber(profileData?.DocumentNumber || '');
@@ -147,6 +149,8 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
                     setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
                     setPlaceOfIssue(profileData?.IssueCountry || '');
                     setDocumentImage(profileData?.DocumentImage1 || null);
+                    setDocumentImage2(profileData?.DocumentImage2 || null);
+                    
                     setFaceImage(profileData?.FaceImage || null);
                     setGivenName(profileData?.FirstName || '');
                     setMiddleName(profileData?.MiddleName || '');
@@ -1031,7 +1035,7 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
                     </button>
                 </div>
                 <div className="user-pic">
-                    {documentImage && backScanButtonClicked ? (
+                    {documentImage2 || backScanButtonClicked ? (
                         <img src={`data:image/png;base64, ${documentImage2}`} alt="Document Image" className="full-img" />
                     ) : (
                         <div className="empty-placeholder">No profile picture available</div>
