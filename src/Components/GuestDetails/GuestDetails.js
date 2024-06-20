@@ -1050,22 +1050,24 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 </div>
                 {documentImage && (
                     <div className='add-guest-button-container'>
-                        {isCheckIn && (
+                        {!isCheckIn && (reservationData.ReservationStatus==='RESERVED' || reservationData.ReservationStatus==='DUEIN' || reservationData.ReservationStatus==='INHOUSE') &&(
                             <button type="button" className="btn btn-outline-primary out-btn" onClick={() => handleCheckInCheckOut(reservationData.ReservationNameID, guestData.PmsProfileID, 1, null)}>
                                 Check In
                                 <i className="bi bi-check-square"></i>
                             </button>
                         )}
-                        {!isCheckIn && isCheckOut && (
+                        {!isCheckOut && (reservationData.ReservationStatus==='DUEOUT') && (
                             <button type="button" className="btn btn-outline-primary in-btn" onClick={() => handleCheckInCheckOut(reservationData.ReservationNameID, guestData.PmsProfileID, null, 1)}>
                                 Check Out
                                 <i className="bi bi-x-square"></i>
                             </button>
                         )}
+                    
                         <button type="button" className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`} onClick={addGuest}>
                             Add Guest
                             <i className="bi bi-plus-lg"></i>
                         </button>
+                      
                     </div>
                 )}
 
