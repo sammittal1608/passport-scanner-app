@@ -10,7 +10,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const fetchReservationData = async (reservationId) => {
     try {
-        const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation', {
+
+        const response = await fetch(settings.DotsURL+'/api/ows/FetchReservation', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -49,7 +50,7 @@ const fetchReservationDataByRefNumber = async (refNumber) => {
     try {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
 
-        const response = await fetch(corsProxyUrl + 'http://qcapi.saavy-pay.com:8082/api/local/FetchReservationDetailsByRefNumber', {
+        const response = await fetch(corsProxyUrl + settings.DotsURL+'/api/local/FetchReservationDetailsByRefNumber', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -117,7 +118,7 @@ const handlePushReservation = async (reservationData, roomNumber, adults) => {
 
     try {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-        const apiUrl1 = 'http://qcapi.saavy-pay.com:8082/api/local/PushReservationDetails';
+        const apiUrl1 = settings.DotsURL+'/api/local/PushReservationDetails';
 
         const response = await axios.post(corsProxyUrl + apiUrl1, requestBody1, {
             headers: {

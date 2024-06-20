@@ -10,8 +10,8 @@ import settings from '../../app.settings.js';
 const fetchReservationData = async (reservationId) => {
     try {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-        const fetchurl = 'http://qcapi.saavy-pay.com:8082/api/ows/FetchReservation';
-
+        const fetchurl = settings.DotsURL+'/api/ows/FetchReservation';
+console.log(fetchurl);
         const response = await fetch(fetchurl, {
             method: 'POST',
             headers: {
@@ -285,8 +285,8 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const apiUrl1 = 'http://qcapi.saavy-pay.com:8082/api/local/PushReservationDetails';
-            const apiUrl2 = 'http://qcapi.saavy-pay.com:8082/api/ows/CreateAccompanyingGuset';
+            const apiUrl1 = settings.DotsURL+'/api/local/PushReservationDetails';
+            const apiUrl2 = settings.DotsURL+'/api/ows/CreateAccompanyingGuset';
 
             let response = {};
             let response2 = {};
@@ -511,7 +511,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             };
 
             console.log(requestBody);
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdatePassport';
+            const apiUrl = settings.DotsURL+'/api/ows/UpdatePassport';
 
             const response = await axios.post(apiUrl, requestBody, {
                 headers: {
@@ -535,7 +535,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     const handleScan = async (scanType) => {
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const apiUrl = 'http://qcscannerapi.saavy-pay.com:8082/api/IDScan/ScanDocument';
+            const apiUrl = settings.scanningURL+'/api/IDScan/ScanDocument';
             const response = await fetch(corsProxyUrl + apiUrl, {
                 method: 'GET',
                 headers: {
@@ -617,7 +617,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             SyncFromCloud: null
         };
 
-        fetch('http://qcapi.saavy-pay.com:8082/api/local/PushDocumentDetails', {
+        fetch(settings.DotsURL+'/api/local/PushDocumentDetails', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -646,7 +646,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             SyncFromCloud: null
         };
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-        const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchProfileDocumentImageByProfileID';
+        const apiUrl = settings.DotsURL+'/api/local/FetchProfileDocumentImageByProfileID';
 
         try {
             const response = await fetch(apiUrl, {
@@ -681,7 +681,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
     const fetchNationalityList = async () => {
         try {
-            const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GetNationalityList', {
+            const response = await fetch(settings.DotsURL+'/api/ows/GetNationalityList', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -745,7 +745,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdateName';
+            const apiUrl = settings.DotsURL+'/api/ows/UpdateName';
 
             const response = await axios.post(apiUrl, requestBody, {
                 headers: {
@@ -802,7 +802,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
             
             console.log(requestBody);
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdatePhoneList';
+            const apiUrl = settings.DotsURL+'/api/ows/UpdatePhoneList';
             
             const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
                 headers: {
@@ -860,7 +860,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                 
                 try {
                     const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-                    const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdateEmailList';
+                    const apiUrl = settings.DotsURL+'/api/ows/UpdateEmailList';
                     
             const response = await axios.post(apiUrl, requestBody, {
                 headers: {
@@ -922,7 +922,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
         
         try {
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/ows/UpdateAddressList';
+            const apiUrl = settings.DotsURL+'/api/ows/UpdateAddressList';
 
             const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
                 headers: {
@@ -944,7 +944,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
 
     const fetchCheckInCheckOutInfo = async (reservationNameID, profileID) => {
         try {
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/FetchProfileInformationProfileId';
+            const apiUrl = settings.DotsURL+'/api/local/FetchProfileInformationProfileId';
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
@@ -977,7 +977,7 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
     };
     const handleCheckInCheckOut = async (reservationNameID, profileID, checkIn, checkOut) => {
         try {
-            const apiUrl = 'http://qcapi.saavy-pay.com:8082/api/local/UpdateGuestReserveStatus';
+            const apiUrl = settings.DotsURL+'/api/local/UpdateGuestReserveStatus';
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
