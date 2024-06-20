@@ -46,7 +46,7 @@ const fetchReservationData = async (reservationId) => {
     }
 };
 
-export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest, isButtonClicked, onSave }) {
+export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservationNumber, addGuest, isButtonClicked, onSave }) {
     const { reservationId } = useParams();
 
     const [salutation, setSalutation] = useState('');
@@ -1061,11 +1061,12 @@ export function GuestDetails({ isVisible, guestData, reservationNumber, addGuest
                                 <i className="bi bi-x-square"></i>
                             </button>
                         )}
-                    
-                        <button type="button" className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`} onClick={addGuest}>
+                    {IsAddGuestvisible &&
+                       ( <button type="button" className={`btn btn-outline-primary ${isButtonClicked ? 'clicked' : ''}`} onClick={addGuest}>
                             Add Guest
                             <i className="bi bi-plus-lg"></i>
-                        </button>
+                        </button>)
+}
                       
                     </div>
                 )}

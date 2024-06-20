@@ -407,6 +407,7 @@ function Home() {
                                 </button>
                                 {visibleGuestIndex === index && (
                                     <GuestDetails
+                                    IsAddGuestvisible={guests.length-1===index?true:false}
                                         isVisible={true}
                                         guestData={reservationData.GuestProfiles[index]}
                                         reservationNumber={reservationData.ReservationNumber}
