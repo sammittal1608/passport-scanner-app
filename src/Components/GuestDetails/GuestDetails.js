@@ -11,7 +11,6 @@ const fetchReservationData = async (reservationId) => {
     try {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
         const fetchurl = settings.DotsURL+'/api/ows/FetchReservation';
-console.log(fetchurl);
         const response = await fetch(fetchurl, {
             method: 'POST',
             headers: {
