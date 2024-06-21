@@ -90,7 +90,6 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
             });
         }
     }, [reservationId]);
-
     // useEffect(() => {
     //     if (guestData) {
     //         setPmsProfileId(guestData.PmsProfileID || '');
@@ -143,7 +142,9 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
                     
                   
                     setDocumentType(profileData?.DocumentType || '');
-                    setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || '');
+                       // setNationality(nationalityMapping[profileData?.Nationality] || profileData?.Nationality || '');
+                   setNationality(profileData?.Nationality||'');
+               
                     setDocumentNumber(profileData?.DocumentNumber || '');
                     setIssueDate(profileData?.IssueDate ? profileData.IssueDate.split('T')[0] : '');
                     setExpiryDate(profileData?.ExpiryDate ? profileData.ExpiryDate.split('T')[0] : '');
@@ -195,7 +196,15 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
 
     const fullName = `${givenName} ${middleName ? middleName + ' ' : ''}${familyName}`;
 
-
+    const determineGender = (genderValue) => {
+        if (genderValue === 'M') {
+          return 'male';
+        } else if (genderValue === 'F') {
+          return 'female';
+        } else {
+          return '';
+        }
+      };
     if (!isVisible) return null;
 
     // const formatDate = (dateString) => {
@@ -563,7 +572,7 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
                         setDateOfBirth(scannedData.DateOfBirth ? scannedData.DateOfBirth.split('T')[0] : '');
                         setGivenName(scannedData.GivenName || '');
                         setMiddleName(scannedData.MiddleName || '');
-                        setGender(scannedData.Gender || '');
+                        setGender(determineGender(scannedData.Gender) || '');
                         setFamilyName(scannedData.LastName || '');
                         setIssueDate(scannedData.IssueDate ? scannedData.IssueDate.split('T')[0] : '');
                         setExpiryDate(scannedData.ExpiryDate ? scannedData.ExpiryDate.split('T')[0] : '');
@@ -580,7 +589,7 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
                         setDateOfBirth(scannedData.DateOfBirth ? scannedData.DateOfBirth.split('T')[0] : '');
                         setGivenName(scannedData.GivenName || '');
                         setMiddleName(scannedData.MiddleName || '');
-                        setGender(scannedData.Gender || '');
+                        setGender(determineGender(scannedData.Gender) || '');
                         setFamilyName(scannedData.LastName || '');
                         setIssueDate(scannedData.IssueDate ? scannedData.IssueDate.split('T')[0] : '');
                         setExpiryDate(scannedData.ExpiryDate ? scannedData.ExpiryDate.split('T')[0] : '');
