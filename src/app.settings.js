@@ -9,8 +9,8 @@ const settings = {
     username: "SUPERVISOR",
     password: "PEGASUS2021",
     legNumber: 1,
-    DotsURL:'http://qcapi.saavy-pay.com:8082',
-    scanningURL:'http://qcscannerapi.saavy-pay.com:8082'
+    DotsURL: process.env.REACT_APP_DOTS_URL,
+    scanningURL: process.env.REACT_APP_SCANNING_URL,
 };
 
 export default settings;

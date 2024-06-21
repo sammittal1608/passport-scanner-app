@@ -1,80 +1,85 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify'; // Ensure correct import
+import 'react-toastify/dist/ReactToastify.css';
 import logo from '../../Images/logo.png';
 import ID_GO from '../../Images/ID-GO.png';
 import './Home.css';
 import GuestDetails from '../GuestDetails/GuestDetails';
 import settings from '../../app.settings';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import NotFound from '../NotFound/NotFound';
 
-const fetchReservationData = async (reservationId) => {
+const fetchWithRetry = async (fetchFunction, params, retries = 1) => {
     try {
-
-        const response = await fetch(settings.DotsURL+'/api/ows/FetchReservation', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                hotelDomain: settings.hotelDomain,
-                kioskID: settings.kioskId,
-                username: settings.username,
-                password: settings.password,
-                systemType: settings.systemType,
-                language: settings.language,
-                legNumber: settings.legNumber,
-                chainCode: settings.chainCode,
-                destinationEntityID: settings.destinationEntityID,
-                destinationSystemType: settings.destinationSystemType,
-                FetchBookingRequest: {
-                    ReservationNameID: reservationId
-                }
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const response = await fetchFunction(params);
+        if (!response || response.responseData.length === 0) {
+            throw new Error('Invalid response data');
         }
-
-        const data = await response.json();
-        console.log("Fetched reservation data:", data);
-        return data;
+        return response;
     } catch (error) {
-        console.error("Failed to fetch reservation data:", error);
-        return null;
+        if (retries > 0) {
+            return await fetchWithRetry(fetchFunction, params, retries - 1);
+        } else {
+            toast.error('Failed to fetch reservation data after multiple attempts.');
+            throw error;
+        }
     }
 };
 
-const fetchReservationDataByRefNumber = async (refNumber) => {
-    try {
-        const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+const fetchReservationData = async (reservationId) => {
+    const response = await fetch(`${settings.DotsURL}/api/ows/FetchReservation`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            hotelDomain: settings.hotelDomain,
+            kioskID: settings.kioskId,
+            username: settings.username,
+            password: settings.password,
+            systemType: settings.systemType,
+            language: settings.language,
+            legNumber: settings.legNumber,
+            chainCode: settings.chainCode,
+            destinationEntityID: settings.destinationEntityID,
+            destinationSystemType: settings.destinationSystemType,
+            FetchBookingRequest: {
+                ReservationNameID: reservationId
+            }
+        })
+    });
 
-        const response = await fetch(corsProxyUrl + settings.DotsURL+'/api/local/FetchReservationDetailsByRefNumber', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                "RequestObject": {
-                    "ReferenceNumber": refNumber,
-                    "ArrivalDate": null
-                },
-                "SyncFromCloud": null
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Fetched reservation data by reference number:", data);
-        return data;
-    } catch (error) {
-        console.error("Failed to fetch reservation data by reference number:", error);
-        return null;
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    return await response.json();
+};
+
+const fetchReservationDataByRefNumber = async (refNumber) => {
+    const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+
+    const response = await fetch(`${corsProxyUrl}${settings.DotsURL}/api/local/FetchReservationDetailsByRefNumber`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            "RequestObject": {
+                "ReferenceNumber": refNumber,
+                "ArrivalDate": null
+            },
+            "SyncFromCloud": null
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
 };
 
 const handlePushReservation = async (reservationData, roomNumber, adults) => {
@@ -118,9 +123,9 @@ const handlePushReservation = async (reservationData, roomNumber, adults) => {
 
     try {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-        const apiUrl1 = settings.DotsURL+'/api/local/PushReservationDetails';
+        const apiUrl1 = `${settings.DotsURL}/api/local/PushReservationDetails`;
 
-        const response = await axios.post(corsProxyUrl + apiUrl1, requestBody1, {
+        const response = await axios.post(`${corsProxyUrl}${apiUrl1}`, requestBody1, {
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -136,78 +141,6 @@ const handlePushReservation = async (reservationData, roomNumber, adults) => {
         console.error("Failed to push reservation:", error);
     }
 };
-
-// const handleCheckIn = async (reservationNameID) => {
-//     try {
-//         const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckIn', {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({
-//                 hotelDomain: settings.hotelDomain,
-//                 kioskID: settings.kioskId,
-//                 username: settings.username,
-//                 password: settings.password,
-//                 systemType: settings.systemType,
-//                 language: settings.language,
-//                 legNumber: settings.legNumber,
-//                 chainCode: settings.chainCode,
-//                 destinationEntityID: settings.destinationEntityID,
-//                 destinationSystemType: settings.destinationSystemType,
-//                 SendFolio: settings.SendFolio,
-//                 OperaReservation: {
-//                     ReservationNameID: reservationNameID
-//                 }
-//             })
-//         });
-
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! status: ${response.status}`);
-//         }
-
-//         const data = await response.json();
-//         console.log("Check-in successful:", data);
-//     } catch (error) {
-//         console.error("Failed to check in:", error);
-//     }
-// };
-
-// const handleCheckOut = async (reservationNameID) => {
-//     try {
-//         const response = await fetch('http://qcapi.saavy-pay.com:8082/api/ows/GuestCheckOut', {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({
-//                 hotelDomain: "EU",
-//                 kioskID: "KIOSK",
-//                 username: "SUPERVISOR",
-//                 password: "PEGASUS2021",
-//                 systemType: "KIOSK",
-//                 language: "EN",
-//                 legNumber: null,
-//                 chainCode: "CHA",
-//                 destinationEntityID: "TI",
-//                 destinationSystemType: "PMS",
-//                 SendFolio: false,
-//                 OperaReservation: {
-//                     ReservationNameID: reservationNameID
-//                 }
-//             })
-//         });
-
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! status: ${response.status}`);
-//         }
-
-//         const data = await response.json();
-//         console.log("Check-out successful:", data);
-//     } catch (error) {
-//         console.error("Failed to check out:", error);
-//     }
-// };
 
 const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -238,7 +171,6 @@ function Home() {
         const data = await fetchReservationDataByRefNumber(refNumber);
         if (data && data.responseData && data.responseData.length > 0) {
             const reservation = data.responseData[0];
-            // setReservationData(reservation);
             setEditableRoomNumber(reservation.RoomNumber ?? '0');
             setEditableAdults(reservation.Adultcount ?? '0');
         } else {
@@ -246,10 +178,9 @@ function Home() {
         }
     };
 
-
     useEffect(() => {
         if (reservationId) {
-            fetchReservationData(reservationId).then(data => {
+            fetchWithRetry(fetchReservationData, reservationId, 1).then(data => {
                 if (data && data.responseData && data.responseData.length > 0) {
                     const reservation = data.responseData[0];
                     setReservationData(reservation);
@@ -258,8 +189,10 @@ function Home() {
                     setEditableRoomNumber(reservation.RoomDetails?.RoomNumber ?? '0');
                     setEditableAdults(reservation.Adults);
                 } else {
-                    console.error("Invalid data structure on initial fetch:", data);
+                    setReservationData(null); // Mark as invalid
                 }
+            }).catch(error => {
+                console.error("Failed to fetch reservation data:", error);
             });
         }
     }, [reservationId]);
@@ -317,111 +250,112 @@ function Home() {
         };
     }, []);
 
-    if (!reservationData) {
-        return <div>Loading...</div>;
+    if (reservationData === null) {
+        return <NotFound />;
     }
 
     return (
-        <div className="container">
-            <header className="header">
-                <div className="logo">
-                    <img src={logo} alt="Company Logo" />
-                </div>
-                <div className="id-go-logo">
-                    <div className='id-go-border'></div>
-                    <img src={ID_GO} alt='ID-GO-Logo' />
-                </div>
-            </header>
-            <div className='bottom'>
-                <div className="reservation-info" style={{ height: `${isExpanded ? (30 + guests.length * 5) * 2.5 : 27 + guests.length * 5}rem` }}>
-                    <div className='reservation-data'>
-                        <div className="info">
-                            <div>RESERVATION NUMBER</div>
-                            <div>{reservationData.ReservationNumber}</div>
-                        </div>
-                        <div className="info">
-                            <div>RESERVATION STATUS</div>
-                            <div>{reservationData.ReservationStatus}</div>
-                        </div>
-                        <div className="info">
-                            <div>ROOM NUMBER</div>
-                            {isEditingRoomNumber ? (
-                                <input
-                                    type="text"
-                                    value={editableRoomNumber}
-                                    onChange={handleRoomNumberChange}
-                                    className="form-control"
-                                    ref={roomNumberRef}
-                                    onKeyPress={(e) => handleKeyPress(e, 'roomNumber')}
-                                    onBlur={() => setIsEditingRoomNumber(false)}
-                                />
-                            ) : (
-                                <div onClick={handleRoomNumberClick}>{editableRoomNumber === '0' ? '0' : editableRoomNumber}</div>
-                            )}
-                        </div>
-
-
-                        <div className="info">
-                            <div>GUEST NAME</div>
-                            <div>{reservationData.GuestProfiles[0]?.GuestName}</div>
-                        </div>
-                        <div className="info">
-                            <div>ARRIVAL DATE</div>
-                            <div>{formatDate(reservationData.ArrivalDate)}</div>
-                        </div>
-                        <div className="info">
-                            <div>ARRIVAL TIME</div>
-                            <div>{formatTime(reservationData.ArrivalDate)}</div>
-                        </div>
-                        <div className="info">
-                            <div>DEPARTURE DATE</div>
-                            <div>{formatDate(reservationData.DepartureDate)}</div>
-                        </div>
-                        <div className="info">
-                            <div>ADULT COUNT</div>
-                            {isEditingAdults ? (
-                                <input
-                                    type="number"
-                                    value={editableAdults}
-                                    onChange={handleAdultsChange}
-                                    className="form-control"
-                                    ref={adultsRef}
-                                    onKeyPress={(e) => handleKeyPress(e, 'adults')}
-                                    onBlur={() => setIsEditingAdults(false)}
-                                />
-                            ) : (
-                                <div onClick={handleAdultsClick}>{editableAdults}</div>
-                            )}
-                        </div>
-                        <div className="info">
-                            <div>CHILD COUNT</div>
-                            <div>{reservationData.Child !== undefined ? reservationData.Child : ''}</div>
-                        </div>
+        <>
+            <ToastContainer /> 
+            <div className="container">
+                <header className="header">
+                    <div className="logo">
+                        <img src={logo} alt="Company Logo" />
                     </div>
-                    <div className="guest-details">
-                        {guests.map((guest, index) => (
-                            <div className="guest" key={index}>
-                                <button className="accordion" onClick={() => toggleGuestDetails(index)}>
-                                    {guest}
-                                    <i className={`bi ${visibleGuestIndex === index ? 'bi-chevron-up' : 'bi-chevron-down'} accordion-icon`}></i>
-                                </button>
-                                {visibleGuestIndex === index && (
-                                    <GuestDetails
-                                    IsAddGuestvisible={guests.length-1===index?true:false}
-                                        isVisible={true}
-                                        guestData={reservationData.GuestProfiles[index]}
-                                        reservationNumber={reservationData.ReservationNumber}
-                                        addGuest={addGuest}
-                                        isButtonClicked={isButtonClicked}
-                                        onSave={() => refreshReservationData(reservationData?.ReservationNumber)}
+                    <div className="id-go-logo">
+                        <div className='id-go-border'></div>
+                        <img src={ID_GO} alt='ID-GO-Logo' />
+                    </div>
+                </header>
+                <div className='bottom'>
+                    <div className="reservation-info" style={{ height: `${isExpanded ? (30 + guests.length * 5) * 2.5 : 27 + guests.length * 5}rem` }}>
+                        <div className='reservation-data'>
+                            <div className="info">
+                                <div>RESERVATION NUMBER</div>
+                                <div>{reservationData.ReservationNumber}</div>
+                            </div>
+                            <div className="info">
+                                <div>RESERVATION STATUS</div>
+                                <div>{reservationData.ReservationStatus}</div>
+                            </div>
+                            <div className="info">
+                                <div>ROOM NUMBER</div>
+                                {isEditingRoomNumber ? (
+                                    <input
+                                        type="text"
+                                        value={editableRoomNumber}
+                                        onChange={handleRoomNumberChange}
+                                        className="form-control"
+                                        ref={roomNumberRef}
+                                        onKeyPress={(e) => handleKeyPress(e, 'roomNumber')}
+                                        onBlur={() => setIsEditingRoomNumber(false)}
                                     />
+                                ) : (
+                                    <div onClick={handleRoomNumberClick}>{editableRoomNumber === '0' ? '0' : editableRoomNumber}</div>
                                 )}
                             </div>
-                        ))}
+                            <div className="info">
+                                <div>GUEST NAME</div>
+                                <div>{reservationData.GuestProfiles[0]?.GuestName}</div>
+                            </div>
+                            <div className="info">
+                                <div>ARRIVAL DATE</div>
+                                <div>{formatDate(reservationData.ArrivalDate)}</div>
+                            </div>
+                            <div className="info">
+                                <div>ARRIVAL TIME</div>
+                                <div>{formatTime(reservationData.ArrivalDate)}</div>
+                            </div>
+                            <div className="info">
+                                <div>DEPARTURE DATE</div>
+                                <div>{formatDate(reservationData.DepartureDate)}</div>
+                            </div>
+                            <div className="info">
+                                <div>ADULT COUNT</div>
+                                {isEditingAdults ? (
+                                    <input
+                                        type="number"
+                                        value={editableAdults}
+                                        onChange={handleAdultsChange}
+                                        className="form-control"
+                                        ref={adultsRef}
+                                        onKeyPress={(e) => handleKeyPress(e, 'adults')}
+                                        onBlur={() => setIsEditingAdults(false)}
+                                    />
+                                ) : (
+                                    <div onClick={handleAdultsClick}>{editableAdults}</div>
+                                )}
+                            </div>
+                            <div className="info">
+                                <div>CHILD COUNT</div>
+                                <div>{reservationData.Child !== undefined ? reservationData.Child : ''}</div>
+                            </div>
+                        </div>
+                        <div className="guest-details">
+                            {guests.map((guest, index) => (
+                                <div className="guest" key={index}>
+                                    <button className="accordion" onClick={() => toggleGuestDetails(index)}>
+                                        {guest}
+                                        <i className={`bi ${visibleGuestIndex === index ? 'bi-chevron-up' : 'bi-chevron-down'} accordion-icon`}></i>
+                                    </button>
+                                    {visibleGuestIndex === index && (
+                                        <GuestDetails
+                                            IsAddGuestvisible={guests.length - 1 === index ? true : false}
+                                            isVisible={true}
+                                            guestData={reservationData.GuestProfiles[index]}
+                                            reservationNumber={reservationData.ReservationNumber}
+                                            addGuest={addGuest}
+                                            isButtonClicked={isButtonClicked}
+                                            onSave={() => refreshReservationData(reservationData?.ReservationNumber)}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 
