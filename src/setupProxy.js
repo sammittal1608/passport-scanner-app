@@ -1,14 +1,14 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+/*const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
     app.use(
         '/api',
         createProxyMiddleware({
-            target: 'http://qcscannerapi.saavy-pay.com:8082',
+            target: 'http://localhost:8089',
             changeOrigin: true,
             pathRewrite: {
                 '^/api': '', 
             },
         })
     );
-};
+};*.

@@ -1,16 +1,19 @@
+
 const settings = {
-    hotelDomain: 'EU',
-    kioskId: 'KIOSK',
-    systemType: 'KIOSK',
-    language: 'EN',
-    chainCode: 'CHA',
-    destinationEntityID: 'TI',
-    destinationSystemType: 'PMS',
-    username: "SUPERVISOR",
-    password: "PEGASUS2021",
-    legNumber: 1,
-    DotsURL: process.env.REACT_APP_DOTS_URL,
-    scanningURL: process.env.REACT_APP_SCANNING_URL,
+    hotelDomain: process.env.REACT_APP_HOTELDOMAIN,
+    kioskId: process.env.REACT_APP_KIOSKID,
+    systemType: process.env.REACT_APP_SYSTEMTYPE,
+    language: process.env.REACT_APP_LANGUAGE,
+    chainCode: process.env.REACT_APP_CHAINCODE,
+    destinationEntityID: process.env.REACT_APP_DESTINATIONENTITYID,
+    destinationSystemType: process.env.REACT_APP_DESTIONATIONSYSTEM,
+    username: process.env.REACT_APP_USERNAM,
+    password: process.env.REACT_APP_PASSWORD,
+    DotsURL: process.env.REACT_APP_DOTSURL,
+    scanningURL: process.env.REACT_APP_SCANNINGURL,
 };
 
+
+
+console.log('Settings:', settings); // Debugging
 export default settings;

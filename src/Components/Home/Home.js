@@ -14,6 +14,7 @@ import NotFound from '../NotFound/NotFound';
 const fetchWithRetry = async (fetchFunction, params, retries = 1) => {
     try {
         const response = await fetchFunction(params);
+       
         if (!response || response.responseData.length === 0) {
             throw new Error('Invalid response data');
         }
@@ -29,7 +30,8 @@ const fetchWithRetry = async (fetchFunction, params, retries = 1) => {
 };
 
 const fetchReservationData = async (reservationId) => {
-    const response = await fetch(`${settings.DotsURL}/api/ows/FetchReservation`, {
+    console.log(process.env.REACT_APP_DOTSURL);
+    const response = await fetch(settings.DotsURL+'/api/ows/FetchReservation', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -61,7 +63,7 @@ const fetchReservationData = async (reservationId) => {
 const fetchReservationDataByRefNumber = async (refNumber) => {
     const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
 
-    const response = await fetch(`${corsProxyUrl}${settings.DotsURL}/api/local/FetchReservationDetailsByRefNumber`, {
+    const response = await fetch(`${settings.DotsURL}/api/local/FetchReservationDetailsByRefNumber`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -125,7 +127,7 @@ const handlePushReservation = async (reservationData, roomNumber, adults) => {
         const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
         const apiUrl1 = `${settings.DotsURL}/api/local/PushReservationDetails`;
 
-        const response = await axios.post(`${corsProxyUrl}${apiUrl1}`, requestBody1, {
+        const response = await axios.post(`$${apiUrl1}`, requestBody1, {
             headers: {
                 'Content-Type': 'application/json'
             }

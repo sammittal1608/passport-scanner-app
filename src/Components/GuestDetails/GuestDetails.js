@@ -4,7 +4,7 @@ import Alert from '@mui/material/Alert';
 import './GuestDetails.css';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import settings from '../../app.settings.js';
+import settings from '../../app.settings';
 
 
 const fetchReservationData = async (reservationId) => {
@@ -546,9 +546,9 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
 
     const handleScan = async (scanType) => {
         try {
-            const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-            const apiUrl = settings.scanningURL+'/api/IDScan/ScanDocument';
-            const response = await fetch(corsProxyUrl + apiUrl, {
+              const apiUrl = settings.scanningURL+'/api/IDScan/ScanDocument';
+            const response = await fetch(apiUrl,{
+              
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -816,7 +816,7 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = settings.DotsURL+'/api/ows/UpdatePhoneList';
             
-            const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
+            const response = await axios.post(apiUrl, requestBody, {
                 headers: {
                     'Content-Type': 'application/json'
                     }
@@ -936,7 +936,7 @@ export function GuestDetails({ IsAddGuestvisible,isVisible, guestData, reservati
             const corsProxyUrl = 'https://thingproxy.freeboard.io/fetch/';
             const apiUrl = settings.DotsURL+'/api/ows/UpdateAddressList';
 
-            const response = await axios.post(corsProxyUrl + apiUrl, requestBody, {
+            const response = await axios.post(apiUrl, requestBody, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
